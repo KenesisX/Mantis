@@ -3,3 +3,5 @@ A Tamagotchi like character based on MGS PS1 with pwnagotchi, Bjorn, Xenu, and k
 
 <img src="https://github.com/KenesisX/Mantis/blob/main/download.jpg" alt="MANTIS">
 
+<img src="https://github.com/KenesisX/Mantis/blob/main/image_6fcd1f05.jpg" alt="MANTIS">
+
