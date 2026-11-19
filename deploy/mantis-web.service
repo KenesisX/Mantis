@@ -1,0 +1,20 @@
+# MANTIS web Command Deck — REFERENCE unit (serve the dashboard on the network).
+# install_pi.sh --display web generates this for your host automatically.
+#   sudo cp deploy/mantis-web.service /etc/systemd/system/mantis.service
+#   sudo systemctl enable --now mantis      # then open http://<pi-ip>:8777/
+[Unit]
+Description=MANTIS web Command Deck
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/mantis
+Environment=MANTIS_HOME=/home/pi/.mantis
+ExecStart=/opt/mantis/venv/bin/python -m mantis web --host 0.0.0.0 --port 8777
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

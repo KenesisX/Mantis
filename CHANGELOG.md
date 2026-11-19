@@ -27,6 +27,13 @@ removed (`mantis/assets/art/`).
 **De-branding:** all "Metal Gear Solid" / "Foxhound" / "Psycho Mantis" references
 removed; the project is an original, non-commercial creation ("FIREFOX" unit).
 
+**Raspberry Pi install kit** (`INSTALL-PI.md` + `deploy/`): a hardened,
+idempotent `install_pi.sh` that provisions a venv, enables SPI/I²C, installs the
+panel driver, and generates a boot-on-start systemd service for **e-ink / web /
+HyperPixel colour**; a one-line `bootstrap.sh` (`curl … | bash`); a headless
+`firstrun-mantis.sh` first-boot auto-installer; and a new `mantis color loop`
+framebuffer daemon for HyperPixel.
+
 ## 1.0.0
 
 Initial release — psychic Tamagotchi: 70 moods, 100 levels (capped MANTIS),

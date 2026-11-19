@@ -533,7 +533,30 @@ def main(argv=None) -> int:
             print(f"Color renderer needs Pillow (+numpy recommended): {e}")
             return 1
         engine.tick()
-        if ns.arg == "fb":
+        if ns.arg in ("fb", "loop", "fbloop"):
+            if ns.arg in ("loop", "fbloop"):
+                # continuous HyperPixel daemon: tick, (auto-)act, blit to the framebuffer
+                import time as _t
+                from .spells import autonomous_sense
+                period = max(2, int(ns.interval))
+                last_auto = 0.0
+                print(f"MANTIS color daemon → /dev/fb0  (every {period}s, Ctrl+C to stop)")
+                try:
+                    while True:
+                        engine.tick()
+                        now = _t.time()
+                        if now - last_auto > max(period, 40):
+                            try:
+                                autonomous_sense(engine); engine.auto_activity()
+                            except Exception:
+                                pass
+                            last_auto = now
+                        color.blit_framebuffer(color.render(engine.snapshot()))
+                        engine.save()
+                        _t.sleep(period)
+                except KeyboardInterrupt:
+                    print("\ncolor daemon stopped.")
+                    return 0
             ok = color.blit_framebuffer(color.render(engine.snapshot()))
             print("blitted to /dev/fb0" if ok else "framebuffer blit failed (no /dev/fb0?)")
             return 0 if ok else 1
