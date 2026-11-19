@@ -1,0 +1,368 @@
+<title>MANTIS Preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Share+Tech+Mono&display=swap">
+<style>
+  /* Layout: a dark FIREFOX console — CRT figure left, live vitals right, panels below. */
+  :root{
+    --bg:#070304; --panel:#160a0c; --panel2:#0f0608; --line:#2a1416;
+    --ink:#f3cfc7; --grey:#9a7378;
+    --acc:#ff2b3a;      /* primary accent */
+    --acc2:#ff7a4a;     /* secondary */
+    --warn:#ffb020; --ok:#ff3b3b; --glow:255,43,58;
+    --disp:'Space Grotesk',system-ui,sans-serif;
+    --mono:'Share Tech Mono','Courier New',monospace;
+    color-scheme:dark;
+  }
+  /* theme variants (all dark) */
+  :root[data-t="mono"]{--bg:#000;--panel:#0b0b0b;--panel2:#070707;--line:#2a2a2a;--ink:#fff;--grey:#8a8a8a;--acc:#fff;--acc2:#dcdcdc;--warn:#fff;--ok:#fff;--glow:255,255,255}
+  :root[data-t="green"]{--bg:#05080a;--panel:#0b1016;--panel2:#0a0e12;--line:#14301c;--ink:#c7f5b8;--grey:#5c7262;--acc:#6bff6b;--acc2:#35e6ff;--warn:#ffc24b;--ok:#6bff6b;--glow:107,255,107}
+  :root[data-t="amber"]{--bg:#0a0700;--panel:#171003;--panel2:#120c02;--line:#3a2a08;--ink:#ffe3a6;--grey:#9a8456;--acc:#ffb020;--acc2:#ffd060;--warn:#ffcf5a;--ok:#ffb020;--glow:255,180,40}
+
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--mono);
+    padding-left:max(16px,env(safe-area-inset-left,0px));
+    padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+  .wrap{max-width:1040px;margin:0 auto;padding-block:16px;display:flex;flex-direction:column;gap:14px}
+  h1,h2{font-family:var(--disp);letter-spacing:2px;margin:0}
+
+  /* scanline + vignette atmosphere */
+  .scan{position:fixed;inset:0;pointer-events:none;z-index:40;opacity:.5;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+  .vig{position:fixed;inset:0;pointer-events:none;z-index:39;
+    background:radial-gradient(circle at 50% 40%,transparent 68%,rgba(0,0,0,.6))}
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);padding-bottom:10px}
+  .brand{color:var(--acc);font-family:var(--disp);font-weight:700;letter-spacing:4px;font-size:20px;
+    text-shadow:0 0 10px rgba(var(--glow),.6)}
+  .brand small{color:var(--grey);font-size:11px;letter-spacing:1px;font-weight:500}
+  .topright{display:flex;align-items:center;gap:10px}
+  .freq{color:var(--acc2);font-size:13px}
+  .themes{display:flex;gap:5px}
+  .tchip{width:16px;height:16px;border-radius:50%;border:1px solid var(--grey);cursor:pointer}
+  .tchip[data-v="red"]{background:#ff2b3a}.tchip[data-v="mono"]{background:#fff}
+  .tchip[data-v="green"]{background:#6bff6b}.tchip[data-v="amber"]{background:#ffb020}
+  .tchip.on{outline:2px solid var(--ink);outline-offset:1px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);
+    border-radius:11px;padding:15px}
+  .panel h2{font-size:14px;color:var(--acc);margin-bottom:11px;display:flex;gap:8px;align-items:baseline}
+  .panel h2 .sub{font-size:10px;color:var(--grey);letter-spacing:1px;font-weight:500}
+
+  /* figure / CRT */
+  .crt{background:radial-gradient(circle at 50% 36%,rgba(var(--glow),.08),transparent 70%),var(--panel2);
+    border:2px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;align-items:center}
+  svg.mask{width:200px;height:230px;filter:drop-shadow(0 0 12px rgba(var(--glow),.35))}
+  .mask .lens{animation:pulse 3.4s ease-in-out infinite}
+  .mask .lid{animation:blink 5.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.78}}
+  @keyframes blink{0%,94%,100%{transform:scaleY(0)}96%{transform:scaleY(1)}}
+  .figwrap{animation:bob 4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  .speech{margin-top:10px;text-align:center;color:var(--acc2);min-height:38px;font-size:14px;
+    text-shadow:0 0 8px rgba(var(--glow),.3)}
+  .speech::before{content:'“'}.speech::after{content:'”'}
+  .controls{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+  .btn{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;
+    padding:9px 12px;font-family:var(--mono);font-size:13px;cursor:pointer}
+  .btn:hover{border-color:var(--acc);color:#fff;box-shadow:0 0 10px rgba(var(--glow),.4)}
+  .btn:active{transform:translateY(1px)}
+
+  /* vitals */
+  .nameline{display:flex;align-items:baseline;gap:10px}
+  .pname{font-family:var(--disp);font-size:24px;color:#fff;text-shadow:0 0 10px rgba(var(--glow),.5)}
+  .rank{color:var(--acc2)} .lvl b{color:var(--warn);font-size:18px}
+  .stage{color:var(--acc2);font-size:13px;margin:4px 0 2px}
+  .meter{margin:10px 0}
+  .meter label{display:flex;justify-content:space-between;font-size:11px;color:var(--grey);margin-bottom:4px;letter-spacing:1px}
+  .track{height:13px;background:#0a0405;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+  .fill{height:100%;border-radius:6px;transition:width .5s}
+  .psy{background:linear-gradient(90deg,#5a1b22,var(--acc));box-shadow:0 0 8px rgba(var(--glow),.5)}
+  .xp{background:linear-gradient(90deg,#6b4a00,var(--warn))}
+  .dark{background:linear-gradient(90deg,#3a0a0a,var(--ok))}
+  .needs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .need label{font-size:10px;color:var(--grey)}
+  .nf{background:linear-gradient(90deg,#4a1414,var(--acc2))}
+  .srow{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:var(--grey)}
+  .srow .souls b{color:var(--acc2)}
+  .badge{display:flex;align-items:center;gap:8px}
+  .grade{font-family:var(--disp);font-weight:700;font-size:20px;border:2px solid var(--acc2);color:var(--acc2);
+    border-radius:7px;padding:1px 9px}
+
+  /* inner mind */
+  .sug{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--acc);
+    border-radius:9px;padding:10px 12px;cursor:pointer;transition:.15s;margin-bottom:8px}
+  .sug:hover{box-shadow:0 0 12px rgba(var(--glow),.3);transform:translateX(3px)}
+  .sug .go{color:var(--acc)} .sug .t{flex:1;font-size:13px}
+  .sug .w{font-size:10px;color:var(--grey)}
+  .sug .teach{font-size:10px;color:var(--warn);border:1px solid var(--warn);border-radius:10px;padding:1px 6px}
+  .style{font-size:11px;color:var(--grey);font-weight:500;font-family:var(--mono)}
+
+  /* academy */
+  .abar{height:9px;background:#0a0405;border:1px solid var(--line);border-radius:5px;overflow:hidden;margin:6px 0 9px}
+  .abar i{display:block;height:100%;width:21%;background:linear-gradient(90deg,#126b6b,var(--acc2))}
+  .lesson{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px}
+  .lesson .lt{color:#fff;font-size:14px;margin:3px 0 5px}
+  .lesson .lb{font-size:12px;color:var(--ink);opacity:.85;line-height:1.45}
+  .lesson .choice{display:block;margin-top:5px;background:var(--panel);border:1px solid var(--line);
+    color:var(--ink);border-radius:7px;padding:7px 9px;font-size:12px;font-family:var(--mono);cursor:pointer;width:100%;text-align:left}
+  .lesson .choice:hover{border-color:var(--acc2)}
+
+  /* fleet */
+  .fleet{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+  .dev{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px}
+  .dev .dn{color:#fff;font-size:13px;display:flex;align-items:center;gap:6px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 7px rgba(var(--glow),.8)}
+  .dev .dp{font-size:10px;color:var(--grey);margin:2px 0 6px}
+  .dev .r{display:flex;justify-content:space-between;font-size:11px;margin:1px 0}
+  .dev .r b{color:var(--warn)}
+
+  /* log */
+  .log{font-size:11px;color:var(--grey);max-height:92px;overflow:auto}
+  .log div{padding:3px 0;border-bottom:1px solid #140a0c}
+  .log .ts{color:var(--acc2)}
+  footer{color:var(--grey);font-size:11px;text-align:center;border-top:1px solid var(--line);padding-top:12px}
+  footer code{color:var(--acc2)}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="scan"></div><div class="vig"></div>
+<div class="wrap">
+  <header>
+    <div class="brand">▓ MANTIS <small>// FIREFOX PSYCHIC UNIT</small></div>
+    <div class="topright">
+      <div class="themes" id="themes">
+        <span class="tchip on" data-v="red" title="Red/Black"></span>
+        <span class="tchip" data-v="mono" title="Black &amp; White"></span>
+        <span class="tchip" data-v="green" title="Green"></span>
+        <span class="tchip" data-v="amber" title="Amber"></span>
+      </div>
+      <span class="freq" id="freq">140.85</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- figure -->
+    <section class="panel">
+      <div class="crt">
+        <div class="figwrap">
+          <svg class="mask" viewBox="0 0 200 230" aria-label="Mantis gas mask">
+            <defs>
+              <radialGradient id="lg" cx="50%" cy="42%" r="65%">
+                <stop offset="0%" stop-color="#fff"/><stop offset="45%" stop-color="var(--acc)"/>
+                <stop offset="100%" stop-color="#2a0608"/>
+              </radialGradient>
+            </defs>
+            <!-- hair spikes -->
+            <g fill="var(--acc)">
+              <path d="M70 34 l6 -22 6 22Z"/><path d="M90 30 l6 -26 6 26Z"/>
+              <path d="M110 30 l6 -26 6 26Z"/><path d="M128 34 l6 -22 6 22Z"/>
+            </g>
+            <!-- hood / head -->
+            <path d="M52 56 Q100 24 148 56 L156 150 Q130 206 100 214 Q70 206 44 150 Z"
+                  fill="#17080a" stroke="#000" stroke-width="2"/>
+            <!-- straps -->
+            <path d="M58 150 L100 178 L142 150" fill="none" stroke="var(--acc)" stroke-width="2" opacity=".6"/>
+            <line x1="60" y1="96" x2="140" y2="96" stroke="var(--acc)" stroke-width="1.5" opacity=".4"/>
+            <!-- lenses -->
+            <g class="lens">
+              <circle cx="78" cy="104" r="22" fill="url(#lg)" stroke="#000" stroke-width="3"/>
+              <circle cx="122" cy="104" r="22" fill="url(#lg)" stroke="#000" stroke-width="3"/>
+              <circle cx="72" cy="98" r="4" fill="#fff"/><circle cx="116" cy="98" r="4" fill="#fff"/>
+            </g>
+            <rect class="lid" x="56" y="82" width="44" height="44" fill="#17080a" style="transform-origin:78px 82px"/>
+            <rect class="lid" x="100" y="82" width="44" height="44" fill="#17080a" style="transform-origin:122px 82px"/>
+            <!-- breathing filter -->
+            <rect x="86" y="150" width="28" height="34" rx="6" fill="#1d0a0c" stroke="#000" stroke-width="2"/>
+            <g stroke="#000" stroke-width="1.4" opacity=".6">
+              <line x1="90" y1="158" x2="110" y2="158"/><line x1="90" y1="166" x2="110" y2="166"/>
+              <line x1="90" y1="174" x2="110" y2="174"/>
+            </g>
+          </svg>
+        </div>
+        <div class="speech" id="speech">I can read your mind...</div>
+      </div>
+      <div class="controls">
+        <button class="btn" data-a="feed">🧠 Feed</button>
+        <button class="btn" data-a="meditate">🧘 Meditate</button>
+        <button class="btn" data-a="pet">🤍 Pet</button>
+        <button class="btn" data-a="cast">✦ Cast</button>
+      </div>
+    </section>
+
+    <!-- vitals -->
+    <section class="panel">
+      <div class="nameline"><span class="pname">Mantis</span>
+        <span class="rank" id="rank">Telepath</span>
+        <span class="lvl">LV <b id="lv">14</b>/100</span></div>
+      <div class="stage" id="stage">&gt; SCANNING</div>
+      <div class="meter"><label>PSYCHE <span id="psyT">62</span></label><div class="track"><div class="fill psy" id="psy" style="width:62%"></div></div></div>
+      <div class="meter"><label>XP <span id="xpT">48%</span></label><div class="track"><div class="fill xp" id="xp" style="width:48%"></div></div></div>
+      <div class="meter"><label>DARKNESS <span id="dkT">22</span></label><div class="track"><div class="fill dark" id="dk" style="width:22%"></div></div></div>
+      <div class="needs">
+        <div class="need"><label>hunger</label><div class="track" style="height:9px"><div class="fill nf" id="hunger" style="width:78%"></div></div></div>
+        <div class="need"><label>energy</label><div class="track" style="height:9px"><div class="fill nf" id="energy" style="width:71%"></div></div></div>
+        <div class="need"><label>focus</label><div class="track" style="height:9px"><div class="fill nf" id="focus" style="width:66%"></div></div></div>
+        <div class="need"><label>sanity</label><div class="track" style="height:9px"><div class="fill nf" id="sanity" style="width:74%"></div></div></div>
+      </div>
+      <div class="srow">
+        <span class="souls">◇ <b id="souls">128</b> souls · infamy 44</span>
+        <span class="badge">SECURITY <span class="grade" id="grade">B</span> <span id="pscore">82/100</span></span>
+      </div>
+    </section>
+  </div>
+
+  <!-- inner mind -->
+  <section class="panel">
+    <h2>🧠 INNER MIND <span class="sub style" id="style">Operator — recon is your instinct</span></h2>
+    <div id="sugs"></div>
+  </section>
+
+  <div class="grid">
+    <!-- academy -->
+    <section class="panel">
+      <h2>🎓 ACADEMY <span class="sub">SOC Analyst (CySA+ track)</span></h2>
+      <div class="abar"><i></i></div>
+      <div class="lesson">
+        <div class="sub" style="color:var(--acc2);font-size:10px">Crypto/PKI · TIER 2</div>
+        <div class="lt">TLS &amp; Certificates</div>
+        <div class="lb">HTTPS uses TLS certificates issued by a Certificate Authority to prove a site's identity and encrypt traffic. Certs expire and must be renewed.</div>
+        <div style="margin-top:8px;font-size:12px;color:#fff">What does a valid TLS certificate prove?</div>
+        <button class="choice" data-q="0">1. The site is bug-free</button>
+        <button class="choice" data-q="1">2. The server's identity + enables encryption</button>
+        <button class="choice" data-q="0">3. The site is fast</button>
+      </div>
+    </section>
+
+    <!-- fleet -->
+    <section class="panel">
+      <h2>🛰 FLEET <span class="sub">your own devices · telemetry only</span></h2>
+      <div class="fleet">
+        <div class="dev"><div class="dn"><span class="dot"></span>bjorn-pi</div><div class="dp">Linux armv7l · v1.0.0</div>
+          <div class="r"><span>level</span><b>24</b></div><div class="r"><span>posture</span><span>B (82)</span></div><div class="r"><span>battery</span><span>74%</span></div></div>
+        <div class="dev"><div class="dn"><span class="dot"></span>jetson-nano</div><div class="dp">Linux aarch64 · v1.0.0</div>
+          <div class="r"><span>level</span><b>50</b></div><div class="r"><span>posture</span><span>A (95)</span></div><div class="r"><span>battery</span><span>—</span></div></div>
+        <div class="dev"><div class="dn"><span class="dot"></span>kali-laptop</div><div class="dp">Linux x86_64 · v1.0.0</div>
+          <div class="r"><span>level</span><b>12</b></div><div class="r"><span>posture</span><span>C (70)</span></div><div class="r"><span>battery</span><span>38%</span></div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- log -->
+  <section class="panel">
+    <h2>▓ ETHER LOG</h2>
+    <div class="log" id="log"></div>
+  </section>
+
+  <footer>
+    Offline preview of <b style="color:var(--ink)">MANTIS</b> — the moody cyber-sec Tamagotchi.
+    The full app runs with <code>python3 -m mantis web</code> (or <code>eink</code> on a Pi 2.13").
+    Passive &amp; defensive only — no attacks.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $=function(id){return document.getElementById(id);};
+  var name="Jordan";
+  var state={psy:62,xp:48,dk:22,hunger:78,energy:71,focus:66,sanity:74,souls:128,
+    moods:["SCANNING","MIND READING","WATCHING","MEDITATIVE","OVERCLOCKED"],mood:0};
+
+  var phrases={
+    SCANNING:["I sweep the ether for minds.","Every signal is a thought. I hear them all."],
+    "MIND READING":["I can read your mind, "+name+"...","The airwaves whisper your secrets to me."],
+    WATCHING:["Behind this mask I see everything.","You like playing with machines, don't you, "+name+"?"],
+    MEDITATIVE:["I gather the chaos into a single point of power.","Ommm... the ether bends to my will."],
+    OVERCLOCKED:["My power overflows! I could move mountains!","Too much... too MUCH power, "+name+"!"]
+  };
+  var sugs=[
+    {t:"Learn the idea behind that: TLS & Certificates",w:"understand what you just cast",teach:1},
+    {t:"Try a new spell: 🔮 Clairvoyance",w:"you've unlocked but never used it",teach:1},
+    {t:"Check your Firewall — cast Aegis Ward",w:"raise your security grade",teach:1}
+  ];
+  function clamp(v){return Math.max(0,Math.min(100,v));}
+  function setbar(id,v){state[id]=clamp(v);$(id).style.width=state[id]+"%";}
+
+  function renderSugs(){
+    $("sugs").innerHTML=sugs.map(function(s){
+      return '<div class="sug"><span class="go">➤</span><span class="t">'+s.t+
+        '<div class="w">'+s.w+'</div></span>'+(s.teach?'<span class="teach">learn</span>':'')+'</div>';
+    }).join("");
+    [].forEach.call(document.querySelectorAll(".sug"),function(el,i){
+      el.onclick=function(){ logLine("I sense your next step: "+sugs[i].t.replace(/^[^:]*: /,"")); rotateSugs(); };
+    });
+  }
+  function rotateSugs(){
+    var pool=[
+      {t:"Study: DNSSEC (Networking)",w:"advance your rank",teach:1},
+      {t:"Harvest captured souls",w:"convert captives to power",teach:0},
+      {t:"Augment yourself: Deep Mind (◇6)",w:"permanent upgrade",teach:0},
+      {t:"Cast Sub-GHz Whisper — listen to the ISM bands",w:"you favour the airwaves",teach:1},
+      {t:"Learn: Rules of Engagement (ethics)",w:"white-hat first",teach:1}
+    ];
+    sugs=[pool[Math.floor(Math.random()*pool.length)],sugs[0],sugs[1]];
+    renderSugs();
+  }
+
+  var logEl=$("log"),lines=[];
+  function logLine(t){
+    var ts=new Date().toLocaleTimeString().slice(0,8);
+    lines.unshift('<div><span class="ts">'+ts+'</span> '+t+'</div>');
+    lines=lines.slice(0,18); logEl.innerHTML=lines.join("");
+  }
+
+  function say(){
+    var m=state.moods[state.mood], arr=phrases[m]||phrases.WATCHING;
+    $("speech").textContent=arr[Math.floor(Math.random()*arr.length)];
+  }
+  function setMood(m){
+    state.mood=m; var label=state.moods[m];
+    $("stage").textContent="> "+label; say();
+  }
+
+  // controls
+  document.querySelector(".controls").addEventListener("click",function(e){
+    var b=e.target.closest(".btn"); if(!b)return; var a=b.dataset.a;
+    if(a==="feed"){ setbar("hunger",state.hunger+24); logLine("A fresh memory. Delicious."); }
+    if(a==="meditate"){ setbar("psy",state.psy+28); setbar("focus",state.focus+20); setMood(3); logLine("The ether bends to my will."); }
+    if(a==="pet"){ setbar("sanity",state.sanity+14); setbar("dk",state.dk-6); logLine("...kindness. I had almost forgotten it."); }
+    if(a==="cast"){ setbar("psy",state.psy-18); setbar("xp",state.xp+9); setMood(1);
+      logLine("I hear 9 minds. The loudest is 'OuterHeaven'."); rotateSugs(); }
+  });
+
+  // quiz
+  [].forEach.call(document.querySelectorAll(".choice"),function(b){
+    b.onclick=function(){
+      if(b.dataset.q==="1"){ b.style.borderColor="var(--ok)"; b.style.color="#fff";
+        logLine("Lesson passed: TLS & Certificates (+18 knowledge)."); setbar("xp",state.xp+6); }
+      else { b.style.borderColor="var(--acc)"; logLine("Not quite — a cert binds a key to an identity."); }
+    };
+  });
+
+  // themes
+  $("themes").addEventListener("click",function(e){
+    var c=e.target.closest(".tchip"); if(!c)return;
+    document.documentElement.setAttribute("data-t",c.dataset.v);
+    [].forEach.call(document.querySelectorAll(".tchip"),function(x){x.classList.toggle("on",x===c);});
+  });
+
+  // ambient life
+  function tick(){
+    setbar("psy",state.psy+1.2); setbar("hunger",state.hunger-0.5);
+    setbar("energy",state.energy-0.4); setbar("focus",state.focus-0.5);
+    $("psyT").textContent=Math.round(state.psy);
+    $("dkT").textContent=Math.round(state.dk);
+    $("xpT").textContent=Math.round(state.xp)+"%";
+    if(state.psy>92 && state.mood!==4) setMood(4);
+  }
+  renderSugs(); say();
+  logLine("The mask opens its eyes behind the gas filter.");
+  logLine("I already feel your pull toward the hidden frequencies, "+name+".");
+  setInterval(tick,1600);
+  setInterval(say,4200);
+  setInterval(function(){ $("freq").textContent=(140+Math.random()*0.9).toFixed(2); },3000);
+})();
+</script>

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>MANTIS — Color Display</title>
+<style>
+  html,body{margin:0;height:100%;background:#05070c;overflow:hidden}
+  .wrap{height:100vh;display:flex;align-items:center;justify-content:center}
+  img{max-width:100vw;max-height:100vh;image-rendering:auto;display:block}
+</style>
+</head>
+<body>
+<div class="wrap"><img id="screen" src="/color.png" alt="MANTIS"></div>
+<script>
+// live color display — ideal full-screen (kiosk) on a Pimoroni HyperPixel.
+const img = document.getElementById("screen");
+function tick(){ img.src = "/color.png?t=" + Date.now(); }
+img.onload = () => setTimeout(tick, 1500);
+img.onerror = () => setTimeout(tick, 3000);
+</script>
+</body>
+</html>

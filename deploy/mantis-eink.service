@@ -1,0 +1,20 @@
+# MANTIS e-ink daemon for Raspberry Pi
+# Install:  sudo cp deploy/psychomantis-eink.service /etc/systemd/system/
+#           sudo systemctl enable --now psychomantis-eink
+[Unit]
+Description=MANTIS e-ink pet (2.13")
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/mantis
+Environment=MANTIS_HOME=/home/pi/.mantis
+# buttons + idle animation are ON by default (add --no-buttons / --pins to change)
+ExecStart=/usr/bin/python3 -m mantis eink --interval 30 --rotate 0
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

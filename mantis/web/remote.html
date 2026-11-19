@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MANTIS — Remote Console</title>
+<style>
+  :root{--bg:#05070c;--green:#ff3b3b;--mag:#ff1f49;--cyan:#ff7a4a;--grey:#5c6472;--ink:#c7f5b8}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Courier New',monospace;
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px;gap:12px}
+  h1{color:var(--mag);letter-spacing:3px;margin:4px 0;text-shadow:0 0 8px var(--mag)}
+  .sub{color:var(--grey);font-size:12px;margin-bottom:4px}
+  .screens{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;width:100%}
+  .screen{background:#0a0d14;border:2px solid #351616;border-radius:10px;padding:8px}
+  .screen img{display:block;image-rendering:pixelated;border-radius:4px}
+  .screen.color img{image-rendering:auto;max-width:92vw}
+  .screen h3{margin:0 0 6px;font-size:12px;color:var(--cyan);text-align:center}
+  .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:520px;width:100%}
+  button{background:#160f22;color:var(--ink);border:1px solid #39225a;border-radius:8px;
+    padding:12px 8px;font-family:inherit;font-size:13px;cursor:pointer}
+  button:hover{border-color:var(--mag);color:#fff;box-shadow:0 0 10px rgba(255,31,73,.4)}
+  button.deed{color:#ff9a9a;border-color:#5a1a2a}
+  .status{font-size:12px;color:var(--cyan);min-height:1.4em;text-align:center}
+  a{color:var(--cyan)}
+</style>
+</head>
+<body>
+  <h1>MANTIS // REMOTE</h1>
+  <div class="sub">live screen view + control — for your own device (VNC-style)</div>
+  <div class="screens">
+    <div class="screen"><h3>E-INK MIRROR</h3><img id="eink" width="500" src="/epaper.png"></div>
+    <div class="screen color"><h3>COLOR / HYPERPIXEL</h3><img id="color" width="480" src="/color.png"></div>
+  </div>
+  <div class="status" id="status">tap a control…</div>
+  <div class="pad">
+    <button data-act="feed">🧠 Feed</button>
+    <button data-act="rest">🌙 Rest</button>
+    <button data-act="meditate">🧘 Meditate</button>
+    <button data-act="pet">🤍 Pet</button>
+    <button data-act="speak">💬 Speak</button>
+    <button id="cast">✦ Cast</button>
+    <button id="harvest">💀 Harvest</button>
+    <button id="posture">🛡 Posture</button>
+  </div>
+  <div class="sub"><a href="/">full dashboard</a> · <a href="/watch">watch</a> · <a href="/color">color only</a></div>
+<script>
+const $ = (id) => document.getElementById(id);
+async function api(path, body){
+  const o = body ? {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)} : {};
+  return (await fetch(path, o)).json();
+}
+function refreshScreens(){
+  $("eink").src = "/epaper.png?t=" + Date.now();
+  $("color").src = "/color.png?t=" + Date.now();
+}
+async function act(a){ const r = await api("/api/action",{action:a}); if(r.message)$("status").textContent=r.message; refreshScreens(); }
+document.querySelectorAll("[data-act]").forEach(b=>b.addEventListener("click",()=>act(b.dataset.act)));
+$("cast").addEventListener("click", async ()=>{
+  const sp = await api("/api/spells");
+  const s = await (await fetch("/api/state")).json();
+  const unlocked = (sp.spells||[]).filter(x=>x.unlocked);
+  const best = unlocked.sort((a,b)=>b.min_level-a.min_level).find(x=>s.psyche>=x.psyche_cost) || unlocked[0];
+  if(!best){$("status").textContent="no spell ready";return;}
+  const r = await api("/api/cast",{spell:best.id});
+  $("status").textContent = r.ok ? (r.result.summary||"cast") : ("✖ "+r.error); refreshScreens();
+});
+$("harvest").addEventListener("click", async ()=>{ const r=await api("/api/harvest",{}); $("status").textContent=r.summary||r.error; refreshScreens(); });
+$("posture").addEventListener("click", async ()=>{ const s=await (await fetch("/api/state")).json(); const p=s.posture; $("status").textContent=`Security posture: ${p.grade} (${p.score==null?"—":p.score}/100)`; });
+setInterval(refreshScreens, 2500);
+refreshScreens();
+</script>
+</body>
+</html>

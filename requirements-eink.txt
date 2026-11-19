@@ -1,0 +1,15 @@
+# Extra deps ONLY needed for the physical Raspberry Pi 2.13" e-ink display.
+# (The web + terminal pet need none of these.)
+pillow>=10.0
+# Choose the one matching your panel:
+#   Waveshare 2.13" HAT:
+# waveshare-epd    # or install from Waveshare's e-Paper repo (recommended)
+#   Pimoroni Inky pHAT 2.13":
+# inky
+# RPi.GPIO
+# spidev
+# Battery gauge (optional, pick what your HAT uses):
+#   PiSugar 2/3: runs its own socket server (no pip dep needed)
+#   custom gauge: write percent to ~/.psychomantis/battery, or set PSYCHOMANTIS_BATTERY_CMD
+# numpy (optional, speeds up the color HyperPixel renderer):
+# numpy
