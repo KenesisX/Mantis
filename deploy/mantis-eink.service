@@ -1,0 +1,22 @@
+# MANTIS e-ink daemon (2.13") — REFERENCE unit.
+# install_pi.sh generates /etc/systemd/system/mantis.service for your host
+# automatically; use this only if wiring it up by hand. Replace USER and paths.
+#   sudo cp deploy/mantis-eink.service /etc/systemd/system/mantis.service
+#   sudo systemctl enable --now mantis
+[Unit]
+Description=MANTIS e-ink pet (2.13")
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/mantis
+Environment=MANTIS_HOME=/home/pi/.mantis
+# buttons + idle animation are ON by default (add --no-buttons / --pins to change)
+ExecStart=/opt/mantis/venv/bin/python -m mantis eink --interval 30 --rotate 0 --driver auto
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

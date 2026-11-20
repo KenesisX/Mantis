@@ -1,0 +1,20 @@
+# MANTIS color daemon for Pimoroni HyperPixel (800x480) — REFERENCE unit.
+# Draws MANTIS straight to the framebuffer (/dev/fb0), no desktop needed.
+# install_pi.sh --display color generates this for your host automatically.
+#   sudo cp deploy/mantis-color.service /etc/systemd/system/mantis.service
+#   sudo systemctl enable --now mantis
+[Unit]
+Description=MANTIS color pet (HyperPixel / framebuffer)
+After=multi-user.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/mantis
+Environment=MANTIS_HOME=/home/pi/.mantis
+ExecStart=/opt/mantis/venv/bin/python -m mantis color loop --interval 3
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

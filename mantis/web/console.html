@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MANTIS — Command Deck</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Share+Tech+Mono&display=swap">
+<link rel="stylesheet" href="/console.css">
+</head>
+<body>
+<div class="scan"></div><div class="vig"></div>
+
+<div class="wrap">
+  <header>
+    <div class="brand">▓ MANTIS <small>// FIREFOX PSYCHIC UNIT</small></div>
+    <div class="topright">
+      <div class="modesw" id="modesw" title="idle mode">
+        <button data-m="passive">◐ PASSIVE</button>
+        <button data-m="active">◉ ACTIVE</button>
+      </div>
+      <span class="batt" id="batt" hidden><span class="cell"><i id="batt-i"></i></span><b id="batt-p">—</b></span>
+      <span class="freq" id="freq">140.85</span>
+      <span class="clock" id="clock">--:--</span>
+      <div class="themes" id="themes">
+        <span class="tchip on" data-v="red"></span><span class="tchip" data-v="mono"></span>
+        <span class="tchip" data-v="green"></span><span class="tchip" data-v="amber"></span>
+      </div>
+      <a href="/classic" class="muted" title="old dashboard" style="font-size:11px">classic</a>
+    </div>
+  </header>
+
+  <div class="deck">
+    <!-- LEFT: identity + vitals -->
+    <div class="col col-left">
+      <div class="hero" id="hero">
+        <button class="edit" id="rename">✎ name</button>
+        <svg class="mask" viewBox="0 0 200 230" aria-hidden="true">
+          <defs><radialGradient id="lg" cx="50%" cy="42%" r="65%">
+            <stop offset="0%" stop-color="#fff"/><stop offset="45%" stop-color="var(--acc)"/><stop offset="100%" stop-color="#2a0608"/>
+          </radialGradient></defs>
+          <path d="M52 56 Q100 24 148 56 L156 150 Q130 206 100 214 Q70 206 44 150 Z" fill="#17080a" stroke="#000" stroke-width="2"/>
+          <g id="lenses"><circle cx="78" cy="104" r="21" fill="url(#lg)" stroke="#000" stroke-width="3"/>
+          <circle cx="122" cy="104" r="21" fill="url(#lg)" stroke="#000" stroke-width="3"/></g>
+          <rect x="86" y="150" width="28" height="34" rx="6" fill="#1d0a0c" stroke="#000" stroke-width="2"/>
+        </svg>
+        <div class="meta">
+          <div class="pname" id="pname">Mantis</div>
+          <div><span class="rank" id="rank">Dormant Psyche</span> · <span class="lvl"><span id="lv">1</span>/100</span></div>
+          <div class="stg" id="stg">&gt; BOOTING</div>
+          <div class="say" id="say">…</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>VITALS <span class="sub" id="agestr">0s</span></h2>
+        <div class="rings">
+          <div class="ring"><svg width="84" height="84" viewBox="0 0 84 84">
+            <circle cx="42" cy="42" r="34" fill="none" stroke="#2a1416" stroke-width="8"/>
+            <circle id="psyring" cx="42" cy="42" r="34" fill="none" stroke="var(--acc)" stroke-width="8"
+                    stroke-linecap="round" stroke-dasharray="214" stroke-dashoffset="214"
+                    transform="rotate(-90 42 42)"/>
+            <text x="42" y="40" text-anchor="middle" fill="#fff" font-size="15" font-family="var(--disp)" id="psynum">0</text>
+            <text x="42" y="54" text-anchor="middle" fill="var(--grey)" font-size="8">PSYCHE</text>
+          </svg></div>
+          <div style="flex:1">
+            <div class="meter"><label>XP <span id="xptxt">0/0</span></label><div class="track"><div class="fill xp" id="xp"></div></div></div>
+            <div class="meter"><label>DARKNESS <span id="dktxt">0</span></label><div class="track"><div class="fill dk" id="dk"></div></div></div>
+          </div>
+        </div>
+        <div class="needs">
+          <div class="meter"><label>HUNGER <span id="t-hunger">0</span></label><div class="track"><div class="fill nd" id="n-hunger"></div></div></div>
+          <div class="meter"><label>ENERGY <span id="t-energy">0</span></label><div class="track"><div class="fill nd" id="n-energy"></div></div></div>
+          <div class="meter"><label>FOCUS <span id="t-focus">0</span></label><div class="track"><div class="fill nd" id="n-focus"></div></div></div>
+          <div class="meter"><label>SANITY <span id="t-sanity">0</span></label><div class="track"><div class="fill nd" id="n-sanity"></div></div></div>
+        </div>
+        <div class="chips">
+          <span>◇ <b id="souls">0</b> souls</span><span>infamy <b id="infamy">0</b></span>
+          <span>SECURITY <span class="grade" id="grade">?</span></span>
+        </div>
+        <div class="care">
+          <button data-a="feed">🧠 Feed</button><button data-a="rest">🌙 Rest</button>
+          <button data-a="meditate">🧘 Med</button><button data-a="pet">🤍 Pet</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>⚔ QUICK DEEDS <span class="sub">fiction · invented minds</span></h2>
+        <div class="care" id="deeds">
+          <button class="qbtn" data-d="haunt">👁 Haunt</button><button class="qbtn" data-d="possess">🌀 Possess</button>
+          <button class="qbtn" data-d="kidnap">⛓ Kidnap</button><button class="qbtn" data-harvest="1">💀 Harvest</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIDDLE: the command deck -->
+    <div class="col col-mid">
+      <div class="panel">
+        <h2>IDLE MODE <span class="sub">passive = quiet watch · active = autonomous</span></h2>
+        <div class="modecard">
+          <div class="big active" id="modebig">ACTIVE</div>
+          <div class="desc" id="modedesc">MANTIS hunts the ether on its own, performing activities it has grown into.</div>
+          <div class="run">◈ <b id="runcount">0</b><br>run</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>LIVE ACTIVITY STREAM <span class="sub" id="nowstg">—</span></h2>
+        <div class="stream" id="stream"></div>
+      </div>
+
+      <div class="panel">
+        <h2>EVOLUTION <span class="sub"><span id="evolabel">LV1 BOOTING</span> · <span id="evocount">1</span>/50</span></h2>
+        <div class="ladder" id="ladder"></div>
+      </div>
+
+      <div class="panel">
+        <h2>ACTIVITY DECK <span class="sub">click to perform · 50 functions</span></h2>
+        <div class="agrid" id="agrid"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: intel + growth -->
+    <div class="col col-right">
+      <div class="panel">
+        <h2>🛡 SECURITY POSTURE <span class="sub" id="posgrade">?</span></h2>
+        <div class="gauge"><div class="score"><span id="posscore">—</span><small>/100</small></div>
+          <div class="gcomp" id="poscomp"></div></div>
+      </div>
+      <div class="panel">
+        <h2>🧠 INNER MIND <span class="sub" id="coachstyle">learning you…</span></h2>
+        <div id="sugs"></div>
+      </div>
+      <div class="panel">
+        <h2>🎓 ACADEMY <span class="sub" id="acadrank">Script Kiddie</span></h2>
+        <div class="abar"><i id="acadfill" style="width:0"></i></div>
+        <div class="muted" id="acadmeta" style="font-size:11px;margin-bottom:8px">0/0 lessons</div>
+        <div class="lesson" id="lesson"></div>
+      </div>
+      <div class="panel">
+        <h2>🛰 FLEET <span class="sub">your devices · telemetry</span></h2>
+        <div class="fleet" id="fleet"><div class="muted" style="font-size:11px">no devices reporting</div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Passive &amp; defensive only — no attacks, no injection, no cracking.</span> ·
+    <a href="/epaper.png" target="_blank">e-ink mirror</a> · <a href="/color.png" target="_blank">color frame</a> ·
+    <span id="ver" class="muted"></span>
+  </footer>
+</div>
+
+<div id="toast"><div class="tt" id="toast-t"></div><div class="ti" id="toast-i"></div></div>
+<script src="/console.js"></script>
+</body>
+</html>

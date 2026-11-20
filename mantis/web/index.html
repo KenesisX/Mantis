@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MANTIS</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+<div id="shake-root">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="codec">▓</span> MANTIS
+      <span class="sub">// FIREFOX PSYCHIC UNIT</span>
+    </div>
+    <div class="topright">
+      <select id="theme" class="themesel" title="theme">
+        <option value="red">🔴 Red/Black</option>
+        <option value="mono">⬜ Black &amp; White</option>
+        <option value="green">🟢 Green</option>
+        <option value="amber">🟠 Amber</option>
+      </select>
+      <span class="battery hidden" id="battery"><span id="batt-bar"><i id="batt-fill"></i></span><b id="batt-pct">—</b></span>
+      <span class="freq" id="freq">140.85</span>
+    </div>
+  </header>
+
+  <main class="grid">
+
+    <!-- LEFT: the face -->
+    <section class="panel face-panel">
+      <div class="crt">
+        <div class="mask-stage" id="mask-stage">
+          <!-- gas mask SVG -->
+          <svg id="mask" viewBox="0 0 200 240" class="mask watching" aria-label="Mantis">
+            <defs>
+              <radialGradient id="lens" cx="50%" cy="40%" r="70%">
+                <stop offset="0%" stop-color="#ff7a5a"/>
+                <stop offset="55%" stop-color="#7d1f1f"/>
+                <stop offset="100%" stop-color="#220606"/>
+              </radialGradient>
+              <linearGradient id="rubber" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#2b2b33"/>
+                <stop offset="100%" stop-color="#0c0c10"/>
+              </linearGradient>
+            </defs>
+            <!-- hood -->
+            <path class="hood" d="M40 30 Q100 -10 160 30 L172 150 Q150 215 100 230 Q50 215 28 150 Z" fill="url(#rubber)" stroke="#000" stroke-width="2"/>
+            <!-- mask body -->
+            <path class="face-body" d="M58 70 Q100 52 142 70 L150 150 Q128 200 100 206 Q72 200 50 150 Z" fill="#17171d" stroke="#000" stroke-width="2"/>
+            <!-- eye lenses -->
+            <g class="eyes">
+              <ellipse class="eye left" cx="80" cy="108" rx="18" ry="22" fill="url(#lens)" stroke="#000" stroke-width="3"/>
+              <ellipse class="eye right" cx="120" cy="108" rx="18" ry="22" fill="url(#lens)" stroke="#000" stroke-width="3"/>
+              <circle class="glint" cx="74" cy="100" r="3" fill="#dfffd0"/>
+              <circle class="glint" cx="114" cy="100" r="3" fill="#dfffd0"/>
+            </g>
+            <!-- eyelids (for sleep/blink) -->
+            <rect class="lid left-lid" x="60" y="86" width="40" height="0" fill="#0c0c10"/>
+            <rect class="lid right-lid" x="100" y="86" width="40" height="0" fill="#0c0c10"/>
+            <!-- breathing filter / vents -->
+            <ellipse class="filter" cx="82" cy="172" rx="16" ry="18" fill="#1d1d24" stroke="#000" stroke-width="2"/>
+            <ellipse class="filter" cx="118" cy="172" rx="16" ry="18" fill="#1d1d24" stroke="#000" stroke-width="2"/>
+            <g stroke="#000" stroke-width="1.4" opacity="0.6">
+              <line x1="74" y1="166" x2="90" y2="166"/><line x1="74" y1="172" x2="90" y2="172"/><line x1="74" y1="178" x2="90" y2="178"/>
+              <line x1="110" y1="166" x2="126" y2="166"/><line x1="110" y1="172" x2="126" y2="172"/><line x1="110" y1="178" x2="126" y2="178"/>
+            </g>
+          </svg>
+          <div class="psi-waves" id="psi-waves"></div>
+        </div>
+        <div class="speech" id="speech">I can read your mind...</div>
+      </div>
+      <div class="care">
+        <button data-action="feed"     class="btn">🧠 Feed</button>
+        <button data-action="rest"     class="btn">🌙 Rest</button>
+        <button data-action="meditate" class="btn">🧘 Meditate</button>
+        <button data-action="pet"      class="btn">🤍 Pet</button>
+        <button data-action="speak"    class="btn">💬 Speak</button>
+      </div>
+    </section>
+
+    <!-- RIGHT: vitals -->
+    <section class="panel stats-panel">
+      <div class="namerow">
+        <span id="pet-name" class="pet-name">Mantis</span>
+        <button id="rename-btn" class="mini">rename</button>
+      </div>
+      <div class="rankrow">
+        <span id="rank" class="rank">Dormant Psyche</span>
+        <span class="lvl">LV <b id="level">1</b></span>
+        <span class="age" id="age">0s</span>
+      </div>
+
+      <div class="meter xp">
+        <label>XP <span id="xp-text">0 / 0</span></label>
+        <div class="track"><div class="fill xpfill" id="xp-fill"></div></div>
+      </div>
+      <div class="meter psy">
+        <label>PSYCHE <span id="psy-text">0</span></label>
+        <div class="track"><div class="fill psyfill" id="psy-fill"></div></div>
+      </div>
+      <div class="meter dark">
+        <label>DARKNESS <span id="dark-text">0</span></label>
+        <div class="track"><div class="fill darkfill" id="dark-fill"></div></div>
+      </div>
+      <div class="darkrow">
+        <span class="souls">◇ <b id="souls">0</b> souls</span>
+        <span class="infamy">infamy <b id="infamy">0</b></span>
+      </div>
+      <div class="postrow">
+        <span class="poslabel">🛡 SECURITY POSTURE</span>
+        <span class="posgrade" id="pos-grade">?</span>
+        <span class="posscore" id="pos-score">— / 100</span>
+      </div>
+
+      <div class="needs">
+        <div class="need"><label>HUNGER</label><div class="track"><div class="fill h" id="n-hunger"></div></div></div>
+        <div class="need"><label>ENERGY</label><div class="track"><div class="fill e" id="n-energy"></div></div></div>
+        <div class="need"><label>FOCUS</label><div class="track"><div class="fill f" id="n-focus"></div></div></div>
+        <div class="need"><label>SANITY</label><div class="track"><div class="fill s" id="n-sanity"></div></div></div>
+      </div>
+
+      <div class="counters" id="counters"></div>
+    </section>
+
+    <!-- INNER MIND (adaptive AI) -->
+    <section class="panel coach-panel">
+      <h2>🧠 INNER MIND <span class="warn" id="coach-style">learning you…</span></h2>
+      <div class="coachsugs" id="coachsugs"></div>
+    </section>
+
+    <!-- KEEPER / PERSONA -->
+    <section class="panel keeper-panel">
+      <h2>🧠 KEEPER PROFILE <span class="warn">MANTIS reads you</span></h2>
+      <div class="reading" id="reading">...</div>
+      <div class="keepgrid">
+        <label>Your name<input id="pf-keeper" type="text" maxlength="24"></label>
+        <label>MANTIS's name<input id="pf-mantis" type="text" maxlength="24"></label>
+        <label>Experience
+          <select id="pf-exp"><option>beginner</option><option>intermediate</option><option>pro</option></select>
+        </label>
+        <label>Style
+          <select id="pf-style"><option>poetic</option><option>plain</option><option>clinical</option></select>
+        </label>
+      </div>
+      <div class="interests" id="pf-interests"></div>
+      <div class="traits" id="pf-traits"></div>
+      <button id="pf-save" class="btn">Save — let him attune</button>
+    </section>
+
+    <!-- ACADEMY -->
+    <section class="panel academy-panel">
+      <h2>🎓 ACADEMY <span class="warn" id="acad-rank">Script Kiddie</span></h2>
+      <div class="acadbar"><div class="acadfill" id="acad-fill"></div></div>
+      <div class="acadmeta" id="acad-meta">0 / 0 lessons</div>
+      <div class="lesson" id="lesson"></div>
+    </section>
+
+    <!-- EVOLUTION -->
+    <section class="panel evo-panel">
+      <h2>🧬 EVOLUTION <span class="warn" id="evo-current">LV1 · BOOTING</span></h2>
+      <div class="evogrid" id="evogrid"></div>
+    </section>
+
+    <!-- FLEET -->
+    <section class="panel fleet-panel">
+      <h2>🛰 FLEET <span class="warn">your own devices · telemetry only</span></h2>
+      <div class="fleetgrid" id="fleetgrid"></div>
+    </section>
+
+    <!-- DARK DEEDS -->
+    <section class="panel deeds-panel">
+      <h2>☠ DARK DEEDS <span class="warn">fiction · invented minds only</span></h2>
+      <div class="deedgrid">
+        <button class="deed" data-deed="haunt">👁 Haunt<span>lv6 · ◈10</span></button>
+        <button class="deed" data-deed="possess">🌀 Possess<span>lv8 · ◈18</span></button>
+        <button class="deed" data-deed="kidnap">⛓ Kidnap<span>lv12 · ◈22</span></button>
+        <button class="deed" data-deed="sever">🗡 Sever<span>lv16 · ◈26</span></button>
+        <button class="deed harvest" data-harvest="1">💀 Harvest Souls<span>convert captives</span></button>
+      </div>
+      <div class="pawnbar" id="pawnbar">No minds captured.</div>
+    </section>
+
+    <!-- AUGMENTS SHOP -->
+    <section class="panel shop-panel">
+      <h2>🕯 AUGMENTS <span class="warn">spend ◇ souls</span></h2>
+      <div class="shopgrid" id="shopgrid"></div>
+    </section>
+
+    <!-- SPELLBOOK -->
+    <section class="panel spell-panel">
+      <h2>✦ SPELLBOOK</h2>
+      <div class="spellgrid" id="spellgrid"></div>
+    </section>
+
+    <!-- INTEL (networks / devices) -->
+    <section class="panel intel-panel">
+      <div class="tabs">
+        <button class="tab active" data-tab="log">ETHER LOG</button>
+        <button class="tab" data-tab="nets">MINDS HEARD</button>
+        <button class="tab" data-tab="devs">SOULS SEEN</button>
+        <button class="tab" data-tab="pawns">CAPTIVES</button>
+        <button class="tab" data-tab="posture">POSTURE</button>
+        <button class="tab" data-tab="ach">RELICS</button>
+      </div>
+      <div class="tabview" id="tab-log"></div>
+      <div class="tabview hidden" id="tab-nets"></div>
+      <div class="tabview hidden" id="tab-devs"></div>
+      <div class="tabview hidden" id="tab-pawns"></div>
+      <div class="tabview hidden" id="tab-posture"></div>
+      <div class="tabview hidden" id="tab-ach"></div>
+    </section>
+
+  </main>
+
+  <footer class="footbar">
+    <span>Passive recon &amp; virtual pet only — no attacks, no injection, no cracking.</span>
+    <span id="status-dot">● live</span>
+  </footer>
+</div>
+
+<!-- spell result modal -->
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <h3 id="modal-title">Spell</h3>
+    <p id="modal-summary" class="modal-summary"></p>
+    <div id="modal-items" class="modal-items"></div>
+    <button id="modal-close" class="btn">Close</button>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

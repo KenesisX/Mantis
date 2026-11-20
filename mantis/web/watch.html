@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>MANTIS Watch</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;color:#ff3b3b;
+    font-family:'Courier New',monospace;overflow:hidden}
+  .wrap{height:100vh;display:flex;align-items:center;justify-content:center}
+  .dial{width:94vw;height:94vw;max-width:400px;max-height:400px;border-radius:50%;
+    border:3px solid #ff3b3b;box-shadow:0 0 24px rgba(255,70,70,.4) inset,0 0 18px rgba(255,70,70,.3);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:14px;box-sizing:border-box;text-align:center}
+  .mask{font-size:30px;filter:drop-shadow(0 0 6px #ff3b3b)}
+  .lv{font-size:1.5rem;font-weight:bold;color:#fff;margin:2px 0}
+  .rank{font-size:.8rem;color:#b06bff}
+  .state{font-size:.9rem;color:#ff7a4a;margin:4px 0}
+  .bar{width:62%;height:9px;border:1px solid #ff3b3b;border-radius:5px;margin:6px 0;overflow:hidden}
+  .fill{height:100%;background:#ff3b3b;width:0%}
+  .row{font-size:.72rem;color:#9fb0a0;margin-top:3px}
+  .phrase{font-size:.7rem;color:#ff7a4a;margin-top:6px;max-width:80%;min-height:1.6em}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="dial">
+  <div class="mask">👁</div>
+  <div class="lv" id="lv">LV 1/100</div>
+  <div class="rank" id="rank">Dormant Psyche</div>
+  <div class="state" id="state">&gt; BOOTING</div>
+  <div class="bar"><div class="fill" id="xp"></div></div>
+  <div class="row" id="counts">◇0 · DARK 0</div>
+  <div class="phrase" id="phrase">I can read your mind...</div>
+</div></div>
+<script>
+async function tick(){
+  try{
+    const d = await (await fetch('/api/state')).json();
+    document.getElementById('lv').textContent = `LV ${d.level}/${d.level_cap}`;
+    document.getElementById('rank').textContent = d.rank;
+    const st = (d.stage&&d.stage.label)||d.mood;
+    document.getElementById('state').textContent = '> ' + st;
+    document.getElementById('xp').style.width = (d.xp_pct||0)+'%';
+    document.getElementById('counts').textContent =
+      `◇${d.souls} · DARK ${Math.round(d.darkness)} · K${d.stats.kills}`;
+    document.getElementById('phrase').textContent = d.phrase;
+  }catch(e){ document.getElementById('state').textContent='> NO LINK'; }
+}
+tick(); setInterval(tick, 3000);
+</script>
+</body>
+</html>
