@@ -1,0 +1,2 @@
+# PsychoMantis has NO third-party dependencies — standard library only.
+# (Python 3.8+ is all you need.)

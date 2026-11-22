@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  selfcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install (with rendering extras)
+        run: pip install ".[eink]"
+      - name: Selfcheck
+        run: python -m mantis selfcheck
+      - name: Everyone starts at level 0
+        run: |
+          python - <<'PY'
+          from mantis.engine import Pet
+          assert Pet().level == 0, "new pets must start at level 0"
+          print("level-0 start OK")
+          PY
+      - name: Syntax-check web assets
+        run: |
+          sudo apt-get update && sudo apt-get install -y nodejs
+          node --check mantis/web/console.js
+          node --check mantis/web/sw.js
+          python -c "import json;json.load(open('mantis/web/manifest.webmanifest'));print('manifest OK')"

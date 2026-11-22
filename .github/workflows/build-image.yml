@@ -1,0 +1,61 @@
+name: Build Pi image
+
+# Builds a flashable Raspberry Pi OS .img with MANTIS baked in and set to boot
+# on start. Run it by hand (Actions → Build Pi image → Run workflow), or it runs
+# on a version tag and attaches the image to the GitHub Release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      display:
+        description: "Display MANTIS drives on boot"
+        type: choice
+        options: [eink, web, color]
+        default: eink
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build the MANTIS wheel
+        run: |
+          pip install build
+          python -m build --wheel --outdir dist
+          # stage the wheel so the pi-gen chroot installs it offline
+          cp dist/mantis-*.whl pi-gen/stage-mantis/00-mantis/files/
+
+      - name: Build Raspberry Pi OS image (pi-gen)
+        uses: usimd/pi-gen-action@v1
+        with:
+          image-name: mantis
+          release: bookworm
+          stage-list: stage0 stage1 stage2 ./pi-gen/stage-mantis
+          # headless, Lite base; the installer enables SPI/I2C in the image
+          enable-ssh: 1
+          username: mantis
+          password: mantis
+          compression: xz
+          extra-host-modules: ""
+          # pass the chosen display mode through to our stage scripts
+          env: |
+            MANTIS_DISPLAY=${{ github.event.inputs.display || 'eink' }}
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mantis-pi-image
+          path: deploy/*.img.xz
+
+      - name: Attach image to the Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: deploy/*.img.xz

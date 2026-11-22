@@ -1,0 +1,18 @@
+# MANTIS fleet agent — reports THIS device's telemetry to a hub you own.
+# Install:  sudo cp deploy/mantis-agent.service /etc/systemd/system/
+#   edit --hub/--key below, then:  sudo systemctl enable --now mantis-agent
+[Unit]
+Description=MANTIS fleet agent (self telemetry)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Environment=MANTIS_HOME=/home/pi/.mantis
+ExecStart=/usr/bin/python3 -m mantis agent --hub http://HUB-IP:8777 --key YOUR-SHARED-KEY --interval 60
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
