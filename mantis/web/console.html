@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MANTIS — Command Deck</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#ff2b3a">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" href="/icons/favicon-32.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MANTIS">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Share+Tech+Mono&display=swap">
 <link rel="stylesheet" href="/console.css">
 </head>
@@ -44,8 +52,8 @@
           <rect x="86" y="150" width="28" height="34" rx="6" fill="#1d0a0c" stroke="#000" stroke-width="2"/>
         </svg>
         <div class="meta">
-          <div class="pname" id="pname">Mantis</div>
-          <div><span class="rank" id="rank">Dormant Psyche</span> · <span class="lvl"><span id="lv">1</span>/100</span></div>
+          <div class="pname" id="pname">Mantis <span class="vbadge" id="vbadge" title="save integrity">✓</span></div>
+          <div><span class="rank" id="rank">Dormant Psyche</span> · <span class="lvl"><span id="lv">0</span>/100</span></div>
           <div class="stg" id="stg">&gt; BOOTING</div>
           <div class="say" id="say">…</div>
         </div>
@@ -117,6 +125,23 @@
         <h2>ACTIVITY DECK <span class="sub">click to perform · 50 functions</span></h2>
         <div class="agrid" id="agrid"></div>
       </div>
+
+      <div class="panel arena">
+        <h2>⚔ ARENA — MANTIS vs MANTIS
+          <span class="sub"><b id="rec">0W-0L-0D</b> · nearby units duel automatically</span></h2>
+        <div class="arena-grid">
+          <div>
+            <div class="sublabel">NEARBY MINDS <span class="muted" id="peercount">none sensed</span></div>
+            <div id="peers" class="peers"><div class="muted" style="font-size:11px">No other MANTIS nearby. Put two on the same network with discovery on.</div></div>
+          </div>
+          <div>
+            <div class="sublabel">YOUR LOADOUT <span class="muted">pick up to 5 — or leave empty for auto</span></div>
+            <div id="loadout" class="loadout"></div>
+            <div class="sublabel" style="margin-top:8px">DUEL LOG</div>
+            <div id="duellog" class="duellog"><div class="muted" style="font-size:11px">No duels yet.</div></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- RIGHT: intel + growth -->
@@ -150,7 +175,25 @@
   </footer>
 </div>
 
+<div id="duelmodal" class="duelmodal" hidden>
+  <div class="duelbox">
+    <button class="dclose" id="dclose">✕</button>
+    <div class="duelhead">
+      <div class="fighter" id="d-me"></div>
+      <div class="vs">VS</div>
+      <div class="fighter" id="d-foe"></div>
+    </div>
+    <div class="hpbars">
+      <div class="hpwrap"><div class="hpbar me" id="d-mehp"></div></div>
+      <div class="hpwrap"><div class="hpbar foe" id="d-foehp"></div></div>
+    </div>
+    <div class="fightlog" id="d-log"></div>
+    <div class="duelresult" id="d-result"></div>
+  </div>
+</div>
+
 <div id="toast"><div class="tt" id="toast-t"></div><div class="ti" id="toast-i"></div></div>
 <script src="/console.js"></script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(function(){});}</script>
 </body>
 </html>

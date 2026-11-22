@@ -407,7 +407,41 @@ and no scanning of anyone else's devices**; a device can't even report without
 your shared key. It's consensual monitoring of gear you own, nothing more.
 A ready `deploy/mantis-agent.service` auto-starts the agent on boot.
 
+### ⚔ Mantis vs Mantis — duels
+Put two MANTIS units on the same network and they **sense each other** (a tiny
+self-describing LAN beacon; optional BLE and receive-only Sub-GHz backends too)
+and **duel**. A duel is an HP fight drawn from a 15-move arsenal — cyber weapons
+(Port Storm, SQL Lance, Deauth Pulse, Bad USB) and psychic powers (Mind Crush,
+Psi Blast, Levitate). Pick a loadout in the web **Arena**, or on a button-less
+unit (a Pi Zero 2 W) it auto-selects and they just hack it out for points.
+
+```bash
+mantis discover     # broadcast + sense nearby units (and auto-duel in active mode)
+mantis peers        # list nearby MANTIS
+mantis duel         # challenge the nearest (auto-resolves)
+```
+
+Earned stats (level, XP, souls, victims, posture, PSYCHE) usually decide it — but
+a scaled **underdog upset** means the little guy sometimes wins. The reveal shows
+the rival's name, stats, appearance, **IP and MAC**, and whether it's VERIFIED.
+
+> **Everyone starts at level 0** and earns everything. Saves are **tamper-evident**
+> (HMAC-signed per device): editing `soul.json` outside the game is detected and
+> flags the unit **⚠ UNVERIFIED** — visible to everyone it duels, and the flag
+> sticks. `mantis verify` checks your own. We don't like cheaters. 🙂
+>
+> Duels exchange only self-described beacons — no scanning, no control of the
+> other device, nothing read off it that it didn't broadcast. Pure game.
+
+### 📱 Install it as an app (PWA)
+The **Command Deck** (`/`) and the touch **Remote** (`/remote`) are installable
+web apps — "Add to Home Screen" on iPhone/Android, or install from the browser on
+Windows/Mac/Linux. One codebase, an app icon on every device. The Remote shows
+live **e-ink + colour mirrors** and big controls (care, mode, cast, run activity,
+**Duel nearest**, harvest, posture) so you run your MANTIS from your phone.
+
 ### ⌚ Companion views
+- **`/remote`** — the installable touch Remote (live mirror + full control).
 - **`/watch`** — a circular high-contrast page for a Galaxy Watch / small screen.
 - **`/epaper.png`** — a live PNG mirror of the e-ink screen (for VNC / remote view).
 - **`POST /api/push_xp`** — let other gadgets feed XP in: `{"rf_captures":1,"ble_beacons":5,"wpa_handshakes":1}`.
@@ -492,6 +526,8 @@ python -m mantis cast mind_reading
 python -m mantis activities  # the 50-function activity deck (locked/unlocked)
 python -m mantis do scanning # perform one of the 50 stage activities
 python -m mantis mode active|passive   # autonomous hunting vs. quiet watch
+python -m mantis discover|peers|duel   # sense nearby MANTIS + duel them
+python -m mantis verify                # check this save is un-tampered (anti-cheat)
 python -m mantis feed|rest|meditate|pet
 python -m mantis install           # friendly first-run wizard (profiles you + MANTIS)
 python -m mantis read              # MANTIS reads you (interests/experience)

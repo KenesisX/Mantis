@@ -18,6 +18,7 @@ from . import academy as ACAD
 from . import persona as PERSONA
 from . import coach as COACH
 from . import activities as ACT
+from . import integrity as INTEG
 
 
 def default_home() -> str:
@@ -59,7 +60,7 @@ class Pet:
     born: float = field(default_factory=time.time)
     last_tick: float = field(default_factory=time.time)
 
-    level: int = 1
+    level: int = 0          # everyone starts at level ZERO and earns it in play
     xp: int = 0
 
     hunger: float = 80.0
@@ -82,7 +83,15 @@ class Pet:
     meditations: int = 0
     pets_received: int = 0
     deaths: int = 0
-    best_level: int = 1
+    best_level: int = 0
+
+    # mantis-vs-mantis duels
+    duels_won: int = 0
+    duels_lost: int = 0
+    duels_draw: int = 0
+    duel_log: List[Dict[str, Any]] = field(default_factory=list)
+    rivals: List[Dict[str, Any]] = field(default_factory=list)
+    tampered: bool = False        # set once if the save is ever edited out-of-game
 
     # dark deed counters (fiction)
     kills: int = 0
@@ -138,6 +147,7 @@ class Engine:
         self._lock = threading.RLock()
         self._hold_until = 0.0            # keep an event mood on screen briefly
         self.profile = PERSONA.load(self.home)
+        self._verified = True          # set by load(): is the save un-tampered?
         self.pet = self.load()
         if self.pet.name == "Mantis" and self.profile.get("mantis_name"):
             self.pet.name = self.profile["mantis_name"]
@@ -148,24 +158,37 @@ class Engine:
         if os.path.exists(self.save_path):
             try:
                 with open(self.save_path, "r", encoding="utf-8") as fh:
-                    pet = Pet.from_dict(json.load(fh))
+                    raw = json.load(fh)
+                # tamper check: a present signature must match the on-disk state.
+                # An ABSENT signature is grandfathered (legacy/pre-1.2 saves) and
+                # gets signed on the next save; a PRESENT mismatching one is tamper.
+                sig = INTEG.read_sig(self.save_path)
+                sig_ok = INTEG.verify_state(self.home, raw, sig) if sig else True
+                pet = Pet.from_dict(raw)
+                if not sig_ok:
+                    pet.tampered = True        # sticks across sessions (re-signed)
+                self._verified = sig_ok and not pet.tampered
                 pet.sessions += 1
                 if pet.name == "Psycho Mantis":      # migrate old saves -> Mantis
                     pet.name = "Mantis"
                 return pet
             except Exception:
                 pass
+        self._verified = True
         pet = Pet()
         pet.sessions = 1
-        pet.log.append(_event("birth", "The Mantis opens its eyes behind the mask."))
+        pet.log.append(_event("birth", "The Mantis opens its eyes behind the mask. Level zero."))
         return pet
 
     def save(self) -> None:
         with self._lock:
+            state = self.pet.to_dict()
             tmp = self.save_path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as fh:
-                json.dump(self.pet.to_dict(), fh, indent=2)
+                json.dump(state, fh, indent=2)
             os.replace(tmp, self.save_path)
+            # re-sign: any edit made outside the game won't carry a valid signature
+            INTEG.write_sig(self.home, self.save_path, state)
 
     # -- events -------------------------------------------------------- #
     def subscribe(self, fn: Callable[[Dict[str, Any]], None]) -> None:
@@ -585,6 +608,106 @@ class Engine:
             except Exception:
                 pass
 
+    # -- mantis-vs-mantis ---------------------------------------------- #
+    def start_discovery(self, enabled: bool = True, extra_radios: bool = True) -> None:
+        """Begin sensing nearby MANTIS units over the LAN (and optional radios)."""
+        if not enabled or getattr(self, "disco", None) is not None:
+            return
+        from . import discovery as DISCO
+        self.disco = DISCO.Discovery(lambda: DISCO.beacon_from_engine(self))
+        self.disco.on_new_peer(self._on_peer_seen)
+        self.disco.start()
+        if extra_radios:
+            try:
+                DISCO.start_extra_sensors(self, self.disco)
+            except Exception:
+                pass
+
+    def peers(self):
+        d = getattr(self, "disco", None)
+        return d.peers() if d else []
+
+    def _arp_mac(self, ip: str) -> Optional[str]:
+        """Best-effort MAC for a peer IP from the local ARP cache (own LAN only)."""
+        if not ip:
+            return None
+        try:
+            with open("/proc/net/arp") as fh:
+                for line in fh.readlines()[1:]:
+                    f = line.split()
+                    if len(f) >= 4 and f[0] == ip and f[3] != "00:00:00:00:00:00":
+                        return f[3].upper()
+        except Exception:
+            pass
+        return None
+
+    def _on_peer_seen(self, peer: Dict[str, Any]) -> None:
+        """A new MANTIS appeared nearby. Record it; auto-duel in ACTIVE mode."""
+        pid = str(peer.get("id") or "")
+        with self._lock:
+            self.pet.rivals = [r for r in self.pet.rivals if r.get("id") != pid]
+            self.pet.rivals.append({"id": pid, "name": peer.get("name"),
+                                    "level": peer.get("level"), "power": peer.get("power"),
+                                    "via": peer.get("via", "wifi"), "t": time.time()})
+            self.pet.rivals = self.pet.rivals[-60:]
+        self.emit("rival", f"Another mind nears: {peer.get('name','?')} "
+                           f"(LV{peer.get('level','?')}, via {peer.get('via','wifi')}).",
+                  peer=pid)
+        if self.pet.idle_mode == "active":
+            cd = getattr(self, "_duel_cd", {})
+            if time.time() - cd.get(pid, 0) > 90:       # per-rival cooldown
+                cd[pid] = time.time(); self._duel_cd = cd
+                try:
+                    self.duel_peer(peer, mode="auto", auto=True)
+                except Exception:
+                    pass
+
+    def duel_peer(self, peer: Any, mode: str = "auto",
+                  my_loadout: Optional[List[str]] = None, auto: bool = False) -> Dict[str, Any]:
+        """Fight a nearby MANTIS. ``peer`` may be a peer id or a peer dict."""
+        from . import duel as DUEL
+        if isinstance(peer, str):
+            d = getattr(self, "disco", None)
+            peer = (d.get(peer) if d else None)
+        if not peer:
+            return {"ok": False, "error": "No such peer nearby."}
+        # enrich with a MAC from ARP if the beacon didn't carry one
+        if not peer.get("mac") and peer.get("ip"):
+            peer["mac"] = self._arp_mac(peer["ip"])
+        me = DUEL.combatant_from_snapshot(self.snapshot())
+        foe = DUEL.combatant_from_beacon(peer)
+        res = DUEL.fight(me, foe, mode=mode, my_loadout=my_loadout)
+
+        with self._lock:
+            if res["draw"]:
+                self.pet.duels_draw += 1
+            elif res["win"]:
+                self.pet.duels_won += 1
+            else:
+                self.pet.duels_lost += 1
+            rec = {"foe": foe.get("name"), "foe_id": foe.get("id"),
+                   "win": res["win"], "draw": res["draw"],
+                   "score": f"{res['my_hp']}-{res['foe_hp']}",
+                   "verified": foe.get("verified", True),
+                   "via": peer.get("via", "wifi"), "t": res["t"]}
+            self.pet.duel_log.append(rec)
+            self.pet.duel_log = self.pet.duel_log[-80:]
+            rw = res["rewards"]
+            self.pet.souls += rw.get("souls", 0)
+            if not res["win"] and not res["draw"]:
+                self.pet.sanity = _clamp(self.pet.sanity - 4)
+        tag = "WON" if res["win"] else ("DREW" if res["draw"] else "LOST")
+        badge = "" if foe.get("verified", True) else " ⚠UNVERIFIED"
+        self._hold_mood("casting", 6)
+        self.emit("duel", f"⚔ DUEL {tag} vs {foe.get('name')}{badge}: {res['summary']}",
+                  win=res["win"], foe=foe.get("name"), auto=auto)
+        if res["rewards"].get("xp"):
+            self._award(res["rewards"]["xp"])
+        self._check_achievements()
+        self._after_action()
+        res["ok"] = True
+        return res
+
     def _after_action(self) -> None:
         self._refresh_mood()
         self._maybe_speak(force=True)
@@ -604,6 +727,10 @@ class Engine:
             ("ascended", pet.level >= 50, "Ascended — halfway to the mask."),
             ("the_mantis", pet.level >= P.LEVEL_CAP, "MANTIS — the most powerful psychic."),
             ("augmented", sum(pet.augments.values()) >= 10, "Augmented — ten upgrades carved."),
+            ("first_duel", (pet.duels_won + pet.duels_lost + pet.duels_draw) >= 1,
+             "First Contact of Minds — you have duelled another MANTIS."),
+            ("duelist", pet.duels_won >= 10, "Duelist — ten rival minds broken."),
+            ("warlord", pet.duels_won >= 50, "Warlord — fifty duels won."),
         ]
         for key, cond, text in checks:
             if cond and key not in pet.achievements:
@@ -626,10 +753,15 @@ class Engine:
                 "stage": {"lvl": stg["lvl"], "key": stg["key"], "label": stg["label"],
                           "phrase": stg["phrase"], "max_stage": ST.MAX_STAGE},
                 "idle_mode": pet.idle_mode,
+                "verified": bool(self._verified) and not getattr(pet, "tampered", False),
                 "activity": {"last": pet.last_activity,
                              "run": getattr(pet, "activities_run", 0),
                              "counts": dict(getattr(pet, "activity_counts", {}))},
                 "activities": ACT.catalog(pet.level),
+                "duels": {"won": pet.duels_won, "lost": pet.duels_lost,
+                          "draw": pet.duels_draw,
+                          "log": pet.duel_log[-20:], "rivals": pet.rivals[-30:]},
+                "peers": self.peers(),
                 "xp": pet.xp,
                 "xp_to_next": need,
                 "xp_pct": round(100 * pet.xp / need, 1) if need else 0,

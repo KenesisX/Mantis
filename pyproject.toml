@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mantis"
-version = "1.1.0"
+version = "1.2.0"
 description = "MANTIS — a psychic Tamagotchi: dark-pet with 70 moods, 100 levels, a 50-stage cyber evolution, souls, deeds, augments, and a 2.13\" e-ink handheld."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -22,4 +22,4 @@ mantis = "mantis.__main__:main"
 include = ["mantis*"]
 
 [tool.setuptools.package-data]
-mantis = ["web/*", "assets/sprites/*", "assets/art/*"]
+mantis = ["web/*", "web/icons/*", "assets/sprites/*", "assets/art/*"]

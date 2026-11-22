@@ -3,6 +3,8 @@
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
   var seenTs = 0, heroSet = false, lessonLock = "", POLL = 1500;
+  var loadout = [], ARSENAL = [], duelBusy = false;
+  try { loadout = JSON.parse(localStorage.getItem("mantis.loadout") || "[]"); } catch (e) { loadout = []; }
 
   // ---- theme -------------------------------------------------------- //
   function setTheme(v, persist) {
@@ -201,6 +203,113 @@
     }).catch(function () {});
   }
 
+  // ---- arena -------------------------------------------------------- //
+  function buildLoadout() {
+    fetch("/api/arsenal").then(function (r) { return r.json(); }).then(function (d) {
+      ARSENAL = d.arsenal || [];
+      var box = $("loadout");
+      box.innerHTML = ARSENAL.map(function (m) {
+        var on = loadout.indexOf(m.id) >= 0 ? " on" : "";
+        return '<span class="mv ' + m.school + on + '" data-id="' + m.id + '" title="' +
+          esc(m.flavour) + '">' + m.glyph + " " + esc(m.name) + "</span>";
+      }).join("");
+      box.querySelectorAll(".mv").forEach(function (el) {
+        el.onclick = function () {
+          var id = el.dataset.id, i = loadout.indexOf(id);
+          if (i >= 0) loadout.splice(i, 1);
+          else if (loadout.length < 5) loadout.push(id);
+          else return toast("Loadout full", "5 moves max — deselect one first.");
+          el.classList.toggle("on");
+          try { localStorage.setItem("mantis.loadout", JSON.stringify(loadout)); } catch (e) {}
+        };
+      });
+    }).catch(function () {});
+  }
+
+  function renderArena(s) {
+    var du = s.duels || {};
+    $("rec").textContent = (du.won || 0) + "W-" + (du.lost || 0) + "L-" + (du.draw || 0) + "D";
+    // nearby peers (only rebuild when the set changes, so buttons stay clickable)
+    var peers = s.peers || [], box = $("peers");
+    $("peercount").textContent = peers.length ? (peers.length + " sensed") : "none sensed";
+    var sig = peers.map(function (p) { return p.id + ":" + p.power + ":" + p.verified; }).join("|");
+    if (box._sig !== sig) {
+      box._sig = sig;
+      if (!peers.length) {
+        box.innerHTML = '<div class="muted" style="font-size:11px">No other MANTIS nearby. Put two on the same network with discovery on.</div>';
+      } else {
+        box.innerHTML = peers.map(function (p) {
+          var uv = p.verified === false ? '<span class="uv">⚠</span>' : "";
+          return '<div class="peer"><div class="pnm"><b>' + esc(p.name || "?") + "</b> " + uv +
+            '<div>LV' + (p.level || 0) + " · pow " + (p.power || 0) + " · " + esc(p.ip || "") + "</div></div>" +
+            '<span class="via">' + esc(p.via || "wifi") + "</span>" +
+            '<button data-peer="' + esc(p.id) + '">Duel</button></div>';
+        }).join("");
+        box.querySelectorAll("button[data-peer]").forEach(function (b) {
+          b.onclick = function () { runDuel(b.dataset.peer); };
+        });
+      }
+    }
+    // duel log
+    var dl = $("duellog"), log = (du.log || []).slice().reverse();
+    dl.innerHTML = log.length ? log.map(function (e) {
+      var cls = e.draw ? "draw" : (e.win ? "win" : "loss");
+      var r = e.draw ? "DREW" : (e.win ? "WON" : "LOST");
+      var uv = e.verified === false ? " ⚠" : "";
+      return '<div class="dl ' + cls + '"><span>vs ' + esc(e.foe || "?") + uv + "</span><span>" + r + "</span></div>";
+    }).join("") : '<div class="muted" style="font-size:11px">No duels yet.</div>';
+  }
+
+  function runDuel(peerId) {
+    if (duelBusy) return; duelBusy = true;
+    post("/api/duel", { peer: peerId, mode: loadout.length ? "select" : "auto", loadout: loadout })
+      .then(function (res) {
+        duelBusy = false;
+        if (!res.ok) { toast("Duel", res.error || "failed"); return; }
+        showFight(res);
+        if (res.state) render(res.state);
+      }).catch(function () { duelBusy = false; });
+  }
+
+  function showFight(res) {
+    var me = res.me || {}, foe = res.foe || {};
+    $("d-me").innerHTML = '<div class="fn">' + esc(me.name || "Mantis") + '</div>' +
+      '<div class="fi">LV' + (me.level || 0) + " · pow " + (me.power || 0) + "</div>";
+    $("d-foe").innerHTML = '<div class="fn">' + esc(foe.name || "?") +
+      (foe.verified === false ? ' <span class="uv">⚠</span>' : "") + '</div>' +
+      '<div class="fi">LV' + (foe.level || 0) + " · pow " + (foe.power || 0) + "<br>" +
+      esc(foe.ip || "") + "<br>MAC " + esc(foe.mac || "—") + "</div>";
+    var mhp0 = res.my_hp0 || 100, fhp0 = res.foe_hp0 || 100;
+    $("d-mehp").style.width = "100%"; $("d-foehp").style.width = "100%";
+    var logEl = $("d-log"); logEl.innerHTML = "";
+    $("d-result").textContent = ""; $("d-result").className = "duelresult";
+    $("duelmodal").hidden = false;
+    var turns = res.turns || [], i = 0;
+    function step() {
+      if (i >= turns.length) {
+        var cls = res.draw ? "" : (res.win ? "win" : "loss");
+        if (res.upset) cls = "upset";
+        $("d-result").className = "duelresult " + cls;
+        $("d-result").textContent = (res.draw ? "DRAW" : (res.win ? "VICTORY" : "DEFEAT")) +
+          (res.upset ? " — UNDERDOG UPSET!" : "") + "  " + res.summary;
+        return;
+      }
+      var t = turns[i++];
+      $("d-mehp").style.width = Math.max(0, 100 * t.my_hp / mhp0) + "%";
+      $("d-foehp").style.width = Math.max(0, 100 * t.foe_hp / fhp0) + "%";
+      var d = document.createElement("div");
+      d.className = "fl " + t.by + " " + t.kind;
+      var verb = t.kind === "miss" ? "misses" : t.kind === "defend" ? "" : "hits for <b>" + (t.dmg || 0) + "</b>";
+      var extra = t.kind === "crit" ? " ⚡CRIT" : t.kind === "upset" ? " 💥UPSET" : t.kind === "defend" ? ("+shield/heal") : "";
+      d.innerHTML = t.glyph + " <b>" + esc(t.actor) + "</b> " + esc(t.move) + " " + verb + extra;
+      logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight;
+      setTimeout(step, 420);
+    }
+    step();
+  }
+  $("dclose").onclick = function () { $("duelmodal").hidden = true; };
+  $("duelmodal").addEventListener("click", function (e) { if (e.target === $("duelmodal")) $("duelmodal").hidden = true; });
+
   // ---- main render -------------------------------------------------- //
   function setRing(pct) {
     var c = 214, off = c * (1 - Math.max(0, Math.min(100, pct)) / 100);
@@ -241,6 +350,11 @@
     renderPosture(s.posture);
     renderCoach(s.coach);
     renderAcademy(s.academy);
+    renderArena(s);
+    // verified badge
+    var vb = $("vbadge");
+    if (s.verified === false) { vb.textContent = "⚠"; vb.className = "vbadge bad"; vb.title = "UNVERIFIED — this save was edited outside the game"; }
+    else { vb.textContent = "✓"; vb.className = "vbadge"; vb.title = "verified — earned, un-tampered"; }
     // battery
     if (s.battery) {
       $("batt").hidden = false; $("batt-p").textContent = Math.round(s.battery.percent) + "%";
@@ -256,6 +370,7 @@
   }
   tick(); setInterval(tick, POLL);
   loadFleet(); setInterval(loadFleet, 8000);
+  buildLoadout();
   // version
   fetch("/api/persona").then(function (r) { return r.json(); }).then(function (d) {
     if (d.theme) { try { if (!localStorage.getItem("mantis.theme")) setTheme(d.theme, false); } catch (e) { setTheme(d.theme, false); } }

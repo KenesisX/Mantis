@@ -2,73 +2,146 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MANTIS — Remote Console</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>MANTIS — Remote</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#ff2b3a">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" href="/icons/favicon-32.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MANTIS">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Share+Tech+Mono&display=swap">
 <style>
-  :root{--bg:#05070c;--green:#ff3b3b;--mag:#ff1f49;--cyan:#ff7a4a;--grey:#5c6472;--ink:#c7f5b8}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Courier New',monospace;
-    min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px;gap:12px}
-  h1{color:var(--mag);letter-spacing:3px;margin:4px 0;text-shadow:0 0 8px var(--mag)}
-  .sub{color:var(--grey);font-size:12px;margin-bottom:4px}
-  .screens{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;width:100%}
-  .screen{background:#0a0d14;border:2px solid #351616;border-radius:10px;padding:8px}
-  .screen img{display:block;image-rendering:pixelated;border-radius:4px}
-  .screen.color img{image-rendering:auto;max-width:92vw}
-  .screen h3{margin:0 0 6px;font-size:12px;color:var(--cyan);text-align:center}
-  .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:520px;width:100%}
-  button{background:#160f22;color:var(--ink);border:1px solid #39225a;border-radius:8px;
-    padding:12px 8px;font-family:inherit;font-size:13px;cursor:pointer}
-  button:hover{border-color:var(--mag);color:#fff;box-shadow:0 0 10px rgba(255,31,73,.4)}
-  button.deed{color:#ff9a9a;border-color:#5a1a2a}
-  .status{font-size:12px;color:var(--cyan);min-height:1.4em;text-align:center}
-  a{color:var(--cyan)}
+  :root{--bg:#070304;--panel:#160a0c;--panel2:#0f0608;--line:#2a1416;--ink:#f3cfc7;
+    --grey:#9a7378;--acc:#ff2b3a;--acc2:#ff7a4a;--ok:#39d98a;--warn:#ffb020;--glow:255,43,58;
+    --disp:'Space Grotesk',system-ui,sans-serif;--mono:'Share Tech Mono','Courier New',monospace;color-scheme:dark}
+  *{box-sizing:border-box}[hidden]{display:none!important}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);
+    min-height:100dvh;display:flex;flex-direction:column;align-items:center;
+    padding:calc(10px + env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));gap:12px}
+  header{display:flex;align-items:center;gap:10px;width:100%;max-width:520px;justify-content:space-between}
+  .brand{font-family:var(--disp);font-weight:700;letter-spacing:3px;color:var(--acc);
+    text-shadow:0 0 10px rgba(var(--glow),.6)}
+  .brand small{color:var(--grey);font-size:10px;letter-spacing:1px}
+  .v{font-size:12px;color:var(--ok);border:1px solid var(--ok);border-radius:50%;padding:0 5px}
+  .v.bad{color:var(--acc);border-color:var(--acc)}
+  .card{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);
+    border-radius:14px;padding:12px;width:100%;max-width:520px}
+  .hero{position:relative;border-radius:12px;overflow:hidden;min-height:150px;
+    background:#0a0405 center/cover no-repeat}
+  .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(7,3,4,.9))}
+  .hero .meta{position:absolute;left:0;right:0;bottom:0;padding:12px;z-index:2}
+  .hero .nm{font-family:var(--disp);font-size:22px;color:#fff;text-shadow:0 0 10px rgba(var(--glow),.6)}
+  .hero .rk{color:var(--acc2);font-size:12px}
+  .hero .say{font-size:12px;color:var(--ink);opacity:.9;font-style:italic;margin-top:3px;min-height:30px}
+  .mirror{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .mirror figure{margin:0;text-align:center}
+  .mirror img{display:block;border:1px solid var(--line);border-radius:8px;max-width:88vw;background:#0a0405}
+  .mirror .eink img{image-rendering:pixelated;width:320px}
+  .mirror figcaption{font-size:9px;color:var(--grey);letter-spacing:1px;margin-top:3px}
+  .stat{display:flex;justify-content:space-between;font-size:11px;color:var(--grey);margin-top:6px}
+  .stat b{color:var(--acc2)}
+  .track{height:9px;background:#0a0405;border:1px solid var(--line);border-radius:5px;overflow:hidden;margin-top:4px}
+  .fill{height:100%;background:linear-gradient(90deg,#5a1b22,var(--acc))}
+  .modesw{display:flex;gap:6px;width:100%;max-width:520px}
+  .modesw button{flex:1;background:var(--panel2);color:var(--grey);border:1px solid var(--line);
+    border-radius:10px;padding:10px;font-family:var(--mono);font-size:13px;font-weight:600}
+  .modesw button.on{color:#fff;border-color:var(--acc);box-shadow:0 0 10px rgba(var(--glow),.35)}
+  .pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;max-width:520px}
+  .pad button{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;
+    padding:14px 6px;font-family:var(--mono);font-size:13px;min-height:52px}
+  .pad button:active{transform:translateY(1px)}
+  .pad button:hover{border-color:var(--acc);color:#fff}
+  .pad button.wide{grid-column:span 2}
+  .pad button.duel{border-color:#5a1a2a;color:#ff9a9a}
+  .status{font-size:12px;color:var(--acc2);min-height:1.4em;text-align:center;max-width:520px}
+  .links{font-size:11px;color:var(--grey)}
+  .links a{color:var(--acc2);text-decoration:none}
+  #install{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:8px 12px;font-weight:700;font-size:12px}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-  <h1>MANTIS // REMOTE</h1>
-  <div class="sub">live screen view + control — for your own device (VNC-style)</div>
-  <div class="screens">
-    <div class="screen"><h3>E-INK MIRROR</h3><img id="eink" width="500" src="/epaper.png"></div>
-    <div class="screen color"><h3>COLOR / HYPERPIXEL</h3><img id="color" width="480" src="/color.png"></div>
+  <header>
+    <div class="brand">▓ MANTIS <small>// REMOTE</small></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="install" hidden>⭳ Install app</button>
+      <span class="v" id="v">✓</span>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="hero" id="hero">
+      <div class="meta">
+        <div class="nm" id="nm">Mantis</div>
+        <div class="rk"><span id="rk">Dormant Psyche</span> · LV<span id="lv">0</span>/100 · <span id="mode">active</span></div>
+        <div class="say" id="say">…</div>
+      </div>
+    </div>
+    <div class="stat"><span>PSYCHE <b id="psy">0</b></span><span>◇ <b id="souls">0</b></span>
+      <span>DUELS <b id="rec">0-0-0</b></span><span>🛡 <b id="grade">?</b></span></div>
+    <div class="track"><div class="fill" id="psyf"></div></div>
   </div>
-  <div class="status" id="status">tap a control…</div>
+
+  <div class="mirror card">
+    <figure class="eink"><img id="eink" src="/epaper.png" alt="e-ink mirror"><figcaption>E-INK MIRROR</figcaption></figure>
+    <figure class="color"><img id="color" width="300" src="/color.png" alt="color mirror"><figcaption>COLOR / HYPERPIXEL</figcaption></figure>
+  </div>
+
+  <div class="modesw">
+    <button data-mode="passive" id="m-passive">◐ PASSIVE</button>
+    <button data-mode="active" id="m-active">◉ ACTIVE</button>
+  </div>
+
   <div class="pad">
     <button data-act="feed">🧠 Feed</button>
     <button data-act="rest">🌙 Rest</button>
-    <button data-act="meditate">🧘 Meditate</button>
+    <button data-act="meditate">🧘 Med</button>
     <button data-act="pet">🤍 Pet</button>
-    <button data-act="speak">💬 Speak</button>
-    <button id="cast">✦ Cast</button>
-    <button id="harvest">💀 Harvest</button>
+    <button id="cast" class="wide">✦ Cast best spell</button>
+    <button id="activity" class="wide">⟢ Run activity</button>
+    <button id="duel" class="duel wide">⚔ Duel nearest</button>
+    <button id="harvest" class="duel">💀 Harvest</button>
     <button id="posture">🛡 Posture</button>
   </div>
-  <div class="sub"><a href="/">full dashboard</a> · <a href="/watch">watch</a> · <a href="/color">color only</a></div>
+
+  <div class="status" id="status">Connected. Control your MANTIS from anywhere on your network.</div>
+  <div class="links"><a href="/">Command Deck</a> · <a href="/watch">Watch</a> · <a href="/color">Color</a></div>
+
 <script>
-const $ = (id) => document.getElementById(id);
-async function api(path, body){
-  const o = body ? {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)} : {};
-  return (await fetch(path, o)).json();
+const $=(id)=>document.getElementById(id);
+async function api(p,b){const o=b?{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)}:{};try{return await (await fetch(p,o)).json();}catch(e){return{};}}
+function status(t){$("status").textContent=t||"";}
+function mirrors(){const t=Date.now();$("eink").src="/epaper.png?t="+t;$("color").src="/color.png?t="+t;}
+let heroSet=false;
+async function refresh(){
+  const s=await api("/api/state"); if(!s||!s.name)return;
+  if(!heroSet){$("hero").style.backgroundImage="url(/art/mantis_portrait.webp)";heroSet=true;}
+  $("nm").textContent=s.name;$("rk").textContent=s.rank;$("lv").textContent=s.level;
+  $("say").textContent=s.phrase||"";$("mode").textContent=s.idle_mode;
+  $("psy").textContent=Math.round(s.psyche);$("psyf").style.width=(s.psyche_pct||0)+"%";
+  $("souls").textContent=s.souls;
+  const d=s.duels||{};$("rec").textContent=(d.won||0)+"-"+(d.lost||0)+"-"+(d.draw||0);
+  $("grade").textContent=(s.posture||{}).grade||"?";
+  $("m-passive").classList.toggle("on",s.idle_mode==="passive");
+  $("m-active").classList.toggle("on",s.idle_mode==="active");
+  const vb=$("v"); if(s.verified===false){vb.textContent="⚠";vb.className="v bad";vb.title="UNVERIFIED save";}else{vb.textContent="✓";vb.className="v";}
 }
-function refreshScreens(){
-  $("eink").src = "/epaper.png?t=" + Date.now();
-  $("color").src = "/color.png?t=" + Date.now();
-}
-async function act(a){ const r = await api("/api/action",{action:a}); if(r.message)$("status").textContent=r.message; refreshScreens(); }
-document.querySelectorAll("[data-act]").forEach(b=>b.addEventListener("click",()=>act(b.dataset.act)));
-$("cast").addEventListener("click", async ()=>{
-  const sp = await api("/api/spells");
-  const s = await (await fetch("/api/state")).json();
-  const unlocked = (sp.spells||[]).filter(x=>x.unlocked);
-  const best = unlocked.sort((a,b)=>b.min_level-a.min_level).find(x=>s.psyche>=x.psyche_cost) || unlocked[0];
-  if(!best){$("status").textContent="no spell ready";return;}
-  const r = await api("/api/cast",{spell:best.id});
-  $("status").textContent = r.ok ? (r.result.summary||"cast") : ("✖ "+r.error); refreshScreens();
-});
-$("harvest").addEventListener("click", async ()=>{ const r=await api("/api/harvest",{}); $("status").textContent=r.summary||r.error; refreshScreens(); });
-$("posture").addEventListener("click", async ()=>{ const s=await (await fetch("/api/state")).json(); const p=s.posture; $("status").textContent=`Security posture: ${p.grade} (${p.score==null?"—":p.score}/100)`; });
-setInterval(refreshScreens, 2500);
-refreshScreens();
+document.querySelectorAll("[data-act]").forEach(b=>b.onclick=async()=>{const r=await api("/api/action",{action:b.dataset.act});if(r.message)status(r.message);mirrors();refresh();});
+document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=async()=>{const r=await api("/api/mode",{mode:b.dataset.mode});status("Mode → "+r.mode);refresh();});
+$("cast").onclick=async()=>{const sp=await api("/api/spells");const s=await api("/api/state");const u=(sp.spells||[]).filter(x=>x.unlocked);const best=u.sort((a,b)=>b.min_level-a.min_level).find(x=>s.psyche>=x.psyche_cost)||u[0];if(!best){status("no spell ready");return;}const r=await api("/api/cast",{spell:best.id});status(r.ok?(r.result.summary||"cast"):("✖ "+r.error));mirrors();refresh();};
+$("activity").onclick=async()=>{const a=await api("/api/activities");const un=(a.activities||[]).filter(x=>x.unlocked);if(!un.length){status("no activity unlocked yet");return;}const pick=un[Math.floor(Math.random()*un.length)];const r=await api("/api/activity",{activity:pick.key});status(r.ok?("◈ "+r.stage+": "+r.summary):("✖ "+r.error));mirrors();refresh();};
+$("duel").onclick=async()=>{const p=await api("/api/peers");const peers=p.peers||[];if(!peers.length){status("No MANTIS nearby to duel.");return;}const r=await api("/api/duel",{peer:peers[0].id,mode:"auto"});if(!r.ok){status("✖ "+r.error);return;}status((r.win?"★ WON":(r.draw?"= DREW":"✖ LOST"))+(r.upset?" (UPSET!)":"")+" vs "+r.foe.name+" — "+r.summary);mirrors();refresh();};
+$("harvest").onclick=async()=>{const r=await api("/api/harvest",{});status(r.summary||r.error);mirrors();refresh();};
+$("posture").onclick=async()=>{const s=await api("/api/state");const p=s.posture||{};status("Security posture: "+(p.grade||"?")+" ("+(p.score==null?"—":p.score)+"/100)");};
+// PWA install prompt
+let deferred=null;
+window.addEventListener("beforeinstallprompt",(e)=>{e.preventDefault();deferred=e;$("install").hidden=false;});
+$("install").onclick=async()=>{if(deferred){deferred.prompt();await deferred.userChoice;deferred=null;$("install").hidden=true;}};
+if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{});}
+mirrors(); refresh(); setInterval(mirrors,2500); setInterval(refresh,1800);
 </script>
 </body>
 </html>

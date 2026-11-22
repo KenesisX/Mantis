@@ -56,7 +56,9 @@ def _selfcheck(engine) -> int:
     # modules
     mods_ok = True
     for m in ("engine", "personality", "stages", "activities", "spells", "rf_spells",
-              "defense_spells", "posture", "academy", "persona", "color", "fleet", "coach", "upgrades", "buttons", "power", "config", "menu",
+              "defense_spells", "posture", "academy", "persona", "color", "fleet", "coach",
+              "duel", "discovery", "integrity", "sensors_ble", "sensors_subghz",
+              "upgrades", "buttons", "power", "config", "menu",
               "server", "eink", "tui"):
         try:
             __import__(f"mantis.{m}")
@@ -71,6 +73,9 @@ def _selfcheck(engine) -> int:
     from . import activities as ACT
     ok("50 activities", len(ACT.catalog(100)) == 50
        and all(ACT.spec(k) for k in ACT.all_keys()), f"{len(ACT._A)} wired")
+    from . import duel as DUEL
+    ok("duel arsenal", len(DUEL.arsenal()) >= 12, f"{len(DUEL.arsenal())} moves")
+    ok("starts at level 0", type(engine).__mro__ and __import__("mantis.engine", fromlist=["Pet"]).Pet().level == 0)
     ok("spellbook", len(spells.SPELLS) >= 8, f"{len(spells.SPELLS)}")
     ok("augments", len(upgrades.AUGMENTS) >= 8, f"{len(upgrades.AUGMENTS)}")
     ok("cap = MANTIS", P.rank_for(100) == "MANTIS")
@@ -305,6 +310,7 @@ def main(argv=None) -> int:
                          "read | coach | persona | fleet | agent | setup | faces | gallery | stages | config | "
                          "version | selfcheck | posture | learn | academy | tui | "
                          "status | spells | activities | do | mode | cast | feed | rest | meditate | pet | "
+                         "peers | duel | discover | verify | "
                          "possess | kidnap | sever | haunt | harvest | shop | buy")
     ap.add_argument("arg", nargs="?", default=None, help="id for 'cast' / 'buy'")
     ap.add_argument("--host", default="127.0.0.1")
@@ -864,6 +870,61 @@ def main(argv=None) -> int:
             print("usage: python -m mantis mode [passive|active|toggle]")
             return 2
         engine.save()
+        return 0
+
+    if cmd == "verify":
+        v = engine._verified and not getattr(engine.pet, "tampered", False)
+        print(f"Save integrity: {'✓ VERIFIED (earned, un-tampered)' if v else '⚠ UNVERIFIED — this save was edited outside the game'}")
+        print(f"Level {engine.pet.level} · duels {engine.pet.duels_won}W-{engine.pet.duels_lost}L-{engine.pet.duels_draw}D")
+        if not v:
+            print("Unverified units are flagged when they duel. Everyone starts at level 0 — play fair.")
+        return 0 if v else 1
+
+    if cmd in ("peers", "discover", "duel"):
+        import time as _t
+        engine._web_port = ns.port
+        engine.start_discovery(enabled=True)
+        if cmd == "discover":
+            print("MANTIS is broadcasting + sensing on the LAN (Ctrl+C to stop)...")
+            try:
+                seen = set()
+                while True:
+                    for p in engine.peers():
+                        if p["id"] not in seen:
+                            seen.add(p["id"])
+                            print(f"  + {p.get('name')} LV{p.get('level')} "
+                                  f"pow{p.get('power')} via {p.get('via')} @ {p.get('ip')}")
+                        if engine.pet.idle_mode == "active":
+                            pass  # auto-duel handled by the discovery callback
+                    engine.tick(); engine.save(); _t.sleep(3)
+            except KeyboardInterrupt:
+                print("\nstopped."); return 0
+        print("Sensing for nearby MANTIS units (~4s)...")
+        _t.sleep(4)
+        plist = engine.peers()
+        if not plist:
+            print("No other MANTIS nearby. (They must be on the same LAN with discovery on.)")
+            return 0
+        print(f"{len(plist)} nearby:")
+        for p in plist:
+            badge = "" if p.get("verified", True) else "  ⚠UNVERIFIED"
+            print(f"  {p.get('id','?')[:16]:<16} {p.get('name','?'):<18} LV{p.get('level','?'):<3} "
+                  f"pow{p.get('power','?'):<4} via {p.get('via','wifi'):<6} {p.get('ip','')}{badge}")
+        if cmd == "duel":
+            target = ns.arg or plist[0]["id"]
+            res = engine.duel_peer(target, mode="auto")
+            if not res.get("ok"):
+                print(f"✖ {res['error']}"); return 1
+            foe = res["foe"]
+            print(f"\n⚔  DUEL vs {foe['name']} (LV{foe['level']}, {foe.get('ip','')}, "
+                  f"MAC {foe.get('mac','?')}) {'✓' if foe.get('verified',True) else '⚠UNVERIFIED'}")
+            for t in res["turns"]:
+                arrow = "→" if t["by"] == "me" else "←"
+                print(f"   {arrow} {t['glyph']} {t['actor']} {t['move']:<13} "
+                      f"{t['kind']:<6} dmg {t.get('dmg',0):<3}  [{t['my_hp']} / {t['foe_hp']}]")
+            print(f"\n  {'★ WON' if res['win'] else ('= DREW' if res['draw'] else '✖ LOST')}"
+                  f"{'  (UNDERDOG UPSET!)' if res.get('upset') else ''} — {res['summary']}")
+            print(f"  record: {engine.pet.duels_won}W-{engine.pet.duels_lost}L-{engine.pet.duels_draw}D")
         return 0
 
     if cmd in ("feed", "rest", "meditate", "pet"):

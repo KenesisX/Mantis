@@ -106,6 +106,13 @@ class _Handler(BaseHTTPRequestHandler):
             self._file("console.js", "application/javascript")
         elif path == "/console.css":
             self._file("console.css", "text/css")
+        elif path == "/manifest.webmanifest":
+            self._file("manifest.webmanifest", "application/manifest+json")
+        elif path == "/sw.js":
+            self._file("sw.js", "application/javascript")
+        elif path.startswith("/icons/"):
+            name = os.path.basename(path)
+            self._file(os.path.join("icons", name), "image/png")
         elif path == "/watch":
             self._file("watch.html", "text/html; charset=utf-8")
         elif path == "/remote":
@@ -150,6 +157,14 @@ class _Handler(BaseHTTPRequestHandler):
                         "level": eng.pet.level,
                         "mode": eng.pet.idle_mode,
                         "run": getattr(eng.pet, "activities_run", 0)})
+        elif path == "/api/peers":
+            self._json({"peers": eng.peers(),
+                        "duels": {"won": eng.pet.duels_won, "lost": eng.pet.duels_lost,
+                                  "draw": eng.pet.duels_draw},
+                        "log": eng.pet.duel_log[-20:]})
+        elif path == "/api/arsenal":
+            from . import duel as DUEL
+            self._json({"arsenal": DUEL.arsenal(eng.pet.level)})
         elif path == "/api/persona":
             from . import persona as PERSONA, config as CFG
             self._json({
@@ -186,6 +201,12 @@ class _Handler(BaseHTTPRequestHandler):
             elif path == "/api/mode":
                 mode = eng.set_mode(str(body.get("mode", "active")))
                 return self._json({"ok": True, "mode": mode, "state": eng.snapshot()})
+            elif path == "/api/duel":
+                res = eng.duel_peer(str(body.get("peer", "")),
+                                    mode=str(body.get("mode", "auto")),
+                                    my_loadout=body.get("loadout") or None)
+                return self._json({**res, "state": eng.snapshot()},
+                                  200 if res.get("ok") else 400)
             elif path == "/api/deed":
                 res = eng.deed(body.get("deed", ""))
                 return self._json({**res, "state": eng.snapshot()},
@@ -274,6 +295,16 @@ def _background(engine: Engine, stop: threading.Event) -> None:
 
 def serve(engine: Engine, host: str = "127.0.0.1", port: int = 8777) -> None:
     _Handler.engine = engine
+    engine._web_port = port
+    # sense nearby MANTIS units (LAN + optional BLE/Sub-GHz); opt-out via config
+    try:
+        from . import config as CFG
+        disc = (CFG.load(engine.home).get("discovery", {}) or {})
+        if disc.get("enabled", True):
+            engine.start_discovery(enabled=True,
+                                   extra_radios=disc.get("radios", True))
+    except Exception:
+        pass
     stop = threading.Event()
     bg = threading.Thread(target=_background, args=(engine, stop), daemon=True)
     bg.start()

@@ -1,0 +1,9 @@
+python3
+python3-venv
+python3-pip
+python3-pil
+python3-numpy
+python3-rpi-lgpio
+git
+libopenjp2-7
+fonts-dejavu-core
