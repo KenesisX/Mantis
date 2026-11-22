@@ -29,9 +29,10 @@
   .v.bad{color:var(--acc);border-color:var(--acc)}
   .card{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);
     border-radius:14px;padding:12px;width:100%;max-width:520px}
-  .hero{position:relative;border-radius:12px;overflow:hidden;min-height:150px;
-    background:#0a0405 center/cover no-repeat}
-  .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(7,3,4,.9))}
+  .hero{position:relative;border-radius:12px;overflow:hidden;min-height:210px;
+    background:radial-gradient(circle at 50% 34%,rgba(var(--glow),.2),transparent 60%),url(/art/mantis_main.png);
+    background-repeat:no-repeat,no-repeat;background-position:center,center 14%;background-size:auto,64% auto}
+  .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,rgba(7,3,4,.92));pointer-events:none}
   .hero .meta{position:absolute;left:0;right:0;bottom:0;padding:12px;z-index:2}
   .hero .nm{font-family:var(--disp);font-size:22px;color:#fff;text-shadow:0 0 10px rgba(var(--glow),.6)}
   .hero .rk{color:var(--acc2);font-size:12px}
@@ -118,7 +119,7 @@ function mirrors(){const t=Date.now();$("eink").src="/epaper.png?t="+t;$("color"
 let heroSet=false;
 async function refresh(){
   const s=await api("/api/state"); if(!s||!s.name)return;
-  if(!heroSet){$("hero").style.backgroundImage="url(/art/mantis_portrait.webp)";heroSet=true;}
+  heroSet=true;  // hero art is the B&W figure, set in CSS
   $("nm").textContent=s.name;$("rk").textContent=s.rank;$("lv").textContent=s.level;
   $("say").textContent=s.phrase||"";$("mode").textContent=s.idle_mode;
   $("psy").textContent=Math.round(s.psyche);$("psyf").style.width=(s.psyche_pct||0)+"%";

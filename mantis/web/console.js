@@ -319,7 +319,7 @@
 
   function render(s) {
     if (!s) return;
-    if (!heroSet) { $("hero").style.backgroundImage = "url(/art/mantis_portrait.webp)"; heroSet = true; }
+    if (!heroSet) { $("hero").classList.add("mono"); heroSet = true; }
     $("pname").textContent = s.name; $("rank").textContent = s.rank;
     $("lv").textContent = s.level; document.title = "MANTIS LV" + s.level + " — " + s.rank;
     $("stg").textContent = "> " + (s.stage ? s.stage.label : ""); $("say").textContent = s.phrase || "";
